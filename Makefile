@@ -21,6 +21,8 @@ HW_VER_BUILD = 0
 # put all of your sources here (use / as path separator)
 SRC += ./startup.c ./vectors.c ./defhndl.c ./image.c ./main.c
 
+SRC += ./dev/src/usart2.c
+
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
 SRC += ./sys/src/sem.c

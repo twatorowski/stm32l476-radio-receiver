@@ -17,6 +17,7 @@
 #include "stm32l476/stm32l476.h"
 
 /* includes with interrupt/exceptions handlers */
+#include "dev/usart2.h"
 
 /* shorthands so that the vector table looks neat! */
 #define SET_SP(sp)                  [STM32_VECTOR_STACK_PTR_BASE].v = sp
@@ -33,4 +34,10 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     SET_EXC_VEC(STM32_EXC_RESET, Startup_ResetHandler),
     /* hard-fault */
     SET_EXC_VEC(STM32_EXC_HARDFAULT, DefHndl_DefaultHandler),
+
+    /* interrupts */
+    /* usart2 */
+    SET_INT_VEC(STM32_INT_USART2, USART2_USART2Isr),
+    SET_INT_VEC(STM32_INT_DMA1C7, USART2_DMA1C7Isr),
+    SET_INT_VEC(STM32_INT_DMA1C6, USART2_DMA1C6Isr),
 };
