@@ -1,5 +1,5 @@
 /* Program Entry, set to mark it as "used" and avoid gcc warnings */
-ENTRY(ResetHandler)
+ENTRY(Startup_ResetHandler)
 
 /* Memory Spaces Definitions */
 MEMORY

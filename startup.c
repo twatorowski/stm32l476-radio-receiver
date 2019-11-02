@@ -12,9 +12,12 @@
 
 #include "linker.h"
 #include "compiler.h"
+#include "stm32l476/stm32l476.h"
 
+/* initialization routine */
+extern void Init(void);
 /* main program routine */
-extern int Main(void);
+extern void Main(void);
 
 /* copy a memory section */
 static void Startup_CopySection(void *dst, const void *src, size_t size)
@@ -65,6 +68,10 @@ void SECTION(".flash_code") Startup_ResetHandler(void)
     /* zero out the bss */
 	Startup_ZeroSection(&__bss_addr, (size_t)&__bss_size);
 
+    /* do the initialization */
+    Init();
+    /* enable interrupts */
+    STM32_ENABLEINTS();
 	/* jump to main program routine */
 	Main();
 }

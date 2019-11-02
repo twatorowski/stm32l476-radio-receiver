@@ -25,6 +25,11 @@
 #endif
 /** @} */
 
+/** @name System CPU Frequency */
+/** @{ */
+/** @brief system frequency in Hz */
+#define CPU_FREQ							        80e6
+/** @} */
 
 /** @name System Event configuration */
 /** @{ */
@@ -68,6 +73,12 @@
 /** @brief dac fetching interrupt priority, keep at the same level as the 
  * microphone interrupt priority level (0x00 - highest, 0xf0 lowest) */
 #define SAI2B_PRIORITY							    0x20
+/** @} */
+
+/** @name USART2 configuration */
+/** @{ */
+/** @brief usart baudrate */
+#define USART2_BAUD_RATE                            230400
 /** @} */
 
 #endif /* CONFIG_H_ */

@@ -17,6 +17,14 @@
 /** @brief semaphores */
 extern sem_t usart2tx_sem, usart2rx_sem;
 
+/** @brief transfer callback */
+typedef struct usart2_cbarg {
+    /**< transfer error code */
+    int error;
+    /**< size of transferred data */
+    size_t size;
+} usart2_cbarg_t;
+
 /** @brief USART2 Interrupt service routine */
 void USART2_USART2Isr(void);
 /** @brief tx dma interrupt */
@@ -38,12 +46,13 @@ int USART2_Init(void);
  * @param ptr pointer to the data to be sent. User is responsible for keeping the
  * data unchangeable during the send process
  * @param size size of the data to be sent in bytes
- * @param cb callback to be called after sending is done OR CB_NULL (as per @ref
+ * @param cb callback to be called after sending is done OR CB_SYNC (as per @ref
  * SYS_CB) if synchronous operation is requested
  *
- * @return number of bytes sent
+ * @return usart2_cbarg_t *  null for async calls, pointer to callback argument 
+ * block for sync calls
  */
-int USART2_Send(const void *ptr, size_t size, cb_t cb);
+usart2_cbarg_t * USART2_Send(const void *ptr, size_t size, cb_t cb);
 
 /**
  * @brief Receive at most @p size of data.
@@ -54,8 +63,9 @@ int USART2_Send(const void *ptr, size_t size, cb_t cb);
  * contain the pointer to the number of bytes that were actually received. Callback
  * may be set for CB_NULL (as per @ref SYS_CB) for synchronous (blocking) operation.
  *
- * @return number of bytes received. Only valid for synchronous operation
- */
-int USART2_Recv(void *ptr, size_t size, cb_t cb);
+ * @return usart2_cbarg_t *  null for async calls, pointer to callback argument 
+ * block for sync calls
+ * */
+usart2_cbarg_t * USART2_Recv(void *ptr, size_t size, cb_t cb);
 
 #endif /* DEV_USART2_H_ */

@@ -7,15 +7,41 @@
  * @brief main application file
  */
 
-/* program main function, must return int so that gcc does not complain in 
- * pedantic mode (-Wmain) */
-int Main(void)
+#include "dev/cpuclock.h"
+#include "dev/usart2.h"
+#include "dev/watchdog.h"
+#include "test/usart2.h"
+
+/* program init function, called before main with interrupts disabled */
+void Init(void)
 {
+
+} 
+
+/* program main function */
+void Main(void)
+{
+    /* initialize the watchdog */
+    Watchdog_Init();
+    /* setup the cpu frequency */
+    CpuClock_Init();
+
+    /* internals */
+    /* initialize usart2 */
+    USART2_Init();
+
+
+    /* tests */
+    /* initialize usart2 test */
+    TestUSART2_Init();
 
 	/* execution loop */
     while (1) {
-	}
+        /* tests */
+        /* poll usart2 test */
+        TestUSART2_Poll();
 
-	/* never reached */
-	return 0;
+        /* kick the dog counter */
+        Watchdog_Kick();
+	}
 }

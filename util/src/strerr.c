@@ -36,8 +36,6 @@ static const char *err_str[] = {
 
     
     /* i2c interface errors */
-    [-EI2C_SWD] = 
-        PRFX_I2C "pins controlled by swd",
     [-EI2C_ADDR_NACK] = 
         PRFX_I2C "device did not respond to it's address",
     [-EI2C_TRANSFER_ERROR] = 

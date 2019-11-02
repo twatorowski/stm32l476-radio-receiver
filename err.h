@@ -36,12 +36,14 @@
 
 /** @name I2C error codes */
 /** @{ */
-/** @brief Interface pins taken over the SWD debug interface */
-#define EI2C_SWD                                -30
 /** @brief addressing nack */
-#define EI2C_ADDR_NACK                          -31
+#define EI2C_ADDR_NACK                          -20
 /** @brief transfer error */
-#define EI2C_TRANSFER_ERROR                     -32
+#define EI2C_TRANSFER_ERROR                     -21
+/** @} */
+
+/** @name USART error codes */
+/** @{ */
 /** @} */
 
 /** @} */
