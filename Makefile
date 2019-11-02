@@ -21,6 +21,10 @@ HW_VER_BUILD = 0
 # put all of your sources here (use / as path separator)
 SRC += ./startup.c ./vectors.c ./defhndl.c ./image.c ./main.c
 
+# abstract circular buffer
+SRC += ./circbuf/src/circbuf.c
+
+# device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
 SRC += ./dev/src/cpuclock.c
 

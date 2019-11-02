@@ -46,6 +46,12 @@
 /** @{ */
 /** @} */
 
+/** @name CIRCBUF error codes */
+/** @{ */
+/** @brief no space in buffer for alloc */
+#define ECIRCBUF_NO_SPACE                       -30
+/** @} */
+
 /** @} */
 
 
