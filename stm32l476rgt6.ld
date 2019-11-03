@@ -78,6 +78,13 @@ SECTIONS
     /*
      * SRAM MEMORY AREA
      */
+    
+    /* SRAM memory (not initialized data) */
+    .no_init (NOLOAD) : ALIGN(4)
+    {
+        *(.no_init)
+        *(.no_init.*)
+    } > SRAM
 
     /* SRAM memory (uninitialized data) */
     .bss (NOLOAD) : ALIGN(4)

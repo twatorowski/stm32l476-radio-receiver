@@ -19,14 +19,22 @@ HW_VER_BUILD = 0
 
 # ----------------------------- SOURCES -----------------------------
 # put all of your sources here (use / as path separator)
-SRC += ./startup.c ./vectors.c ./defhndl.c ./image.c ./main.c
+SRC += ./startup.c ./vectors.c ./defhndl.c ./image.c ./main.c ./debug.c
 
-# abstract circular buffer
-SRC += ./circbuf/src/circbuf.c
+# at protocol
+SRC += ./at/src/at.c ./at/src/cmd.c
+SRC += ./at/src/rxtx_usart2.c ./at/src/rxtx.c
+SRC += ./at/src/ntfy.c
+
+# at prococol command submodules
+SRC += ./at/cmd/src/gen.c ./at/cmd/src/bl.c
+
+# at protocol notification submodules
+SRC += ./at/ntfy/src/debug.c
 
 # device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
-SRC += ./dev/src/cpuclock.c
+SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
@@ -51,7 +59,7 @@ LIB_DIRS = .
 
 # ----------------------- OPTIMIZATION LEVEL ------------------------
 # use '-O0' (no optimization) for debugging or (-Os) for release
-OPT_LEVEL = -O0
+OPT_LEVEL = -Os
 
 # ----------------------- OUTPUT DIRECTORIES ------------------------
 # object files directory (use / as path separator)

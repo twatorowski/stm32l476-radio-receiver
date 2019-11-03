@@ -1337,7 +1337,7 @@ static int vsnprintf(char * str, size_t size, const char *format, va_list args)
     /* return the number of characters printed */
     return s - str;
 }
-
+#include "compiler.h"
 
 /* safe version of the vscanf function */
 static int vsnscanf(const char *str, size_t size, const char *format, 

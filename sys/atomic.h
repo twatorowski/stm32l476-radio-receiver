@@ -12,7 +12,32 @@
 #include "err.h"
 #include "arch/arch.h"
 
-/* increment value */
+
+/**
+ * @brief Move the immediate value atomically from source to destination
+ * 
+ * @param dst destination
+ * @param src source
+ */
+static inline ALWAYS_INLINE void Atomic_MOV32(volatile void *dst, volatile void *src)
+{
+    /* read-write until success */
+    do {
+        /* this read is just to start the exclusive access monitor */
+        Arch_LDREX((void *)dst);
+    /* write back */
+    } while (Arch_STREX((void *)dst, *(volatile uint32_t *)src) != 0);
+}
+
+/**
+ * @brief Increment value from *dst with `value`. Ensures atomicity of the 
+ * operation.
+ * 
+ * @param dst source/destination pointer
+ * @param value value to xor with
+ * 
+ * @return uint32_t value under *dst before incrementing
+ */
 static inline ALWAYS_INLINE uint32_t Atomic_ADD32(void *dst, uint32_t value)
 {
 	/* previous value */
@@ -29,7 +54,14 @@ static inline ALWAYS_INLINE uint32_t Atomic_ADD32(void *dst, uint32_t value)
 	return val;
 }
 
-/* and value */
+/**
+ * @brief AND value from *dst with `value`. Ensures atomicity of the operation.
+ * 
+ * @param dst source/destination pointer
+ * @param value value to xor with
+ * 
+ * @return uint32_t value under *dst before ANDing
+ */
 static inline ALWAYS_INLINE uint32_t Atomic_AND32(void *dst, uint32_t value)
 {
 	/* previous value */
@@ -46,7 +78,14 @@ static inline ALWAYS_INLINE uint32_t Atomic_AND32(void *dst, uint32_t value)
 	return val;
 }
 
-/* or value */
+/**
+ * @brief OR value from *dst with `value`. Ensures atomicity of the operation.
+ * 
+ * @param dst source/destination pointer
+ * @param value value to xor with
+ * 
+ * @return uint32_t value under *dst before ORing
+ */
 static inline ALWAYS_INLINE uint32_t Atomic_OR32(void *dst, uint32_t value)
 {
 	/* previous value */
@@ -63,7 +102,14 @@ static inline ALWAYS_INLINE uint32_t Atomic_OR32(void *dst, uint32_t value)
 	return val;
 }
 
-/* xor value */
+/**
+ * @brief XOR value from *dst with `value`. Ensures atomicity of the operation.
+ * 
+ * @param dst source/destination pointer
+ * @param value value to xor with
+ * 
+ * @return uint32_t value under *dst before XORing
+ */
 static inline ALWAYS_INLINE uint32_t Atomic_XOR32(void *dst, uint32_t value)
 {
 	/* previous value */
@@ -80,18 +126,35 @@ static inline ALWAYS_INLINE uint32_t Atomic_XOR32(void *dst, uint32_t value)
 	return val;
 }
 
-/* load value */
+/**
+ * @brief Loads value from source pointer. Start the atomic operation block. To 
+ * be followed by Atomic_STR32()
+ * 
+ * @param src source pointer
+ * 
+ * @return uint32_t value read from the source
+ */
 static inline ALWAYS_INLINE uint32_t Atomic_LDR32(void *src)
 {
     /* load the value */
     return Arch_LDREX(src);
 }
 
-/* store value, return the status of the store */
+/**
+ * @brief Store the value after is was read by Atomic_LDR32(). Return the status 
+ * of the store.
+ * 
+ * @param dst destination pointer
+ * @param value value to be stored
+ * 
+ * @return ALWAYS_INLINE EOK is store was atomic, error otherwise 
+ */
 static inline ALWAYS_INLINE int Atomic_STR32(void *dst, uint32_t value)
 {
     /* try to store the value */
     return Arch_STREX(dst, value) == 0 ? EOK : EFATAL;
 }
+
+
 
 #endif /* SYS_ATOMIC_H_ */

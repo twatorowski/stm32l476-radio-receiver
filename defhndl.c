@@ -7,8 +7,53 @@
  * @brief Default Exception/Interrupt Handler
  */
 
+#include "compiler.h"
+#include "debug.h"
+#include "err.h"
+#include "arch/arch.h"
+#include "stm32l476/scb.h"
+
+/* dump information to storage */
+static void DefHndl_Dump(void *sp, uint32_t ipsr)
+{
+    /* placeholders */
+    volatile debug_exc_info_t *ei = &debug_exc_info; 
+    volatile debug_scb_info_t *si = &debug_scb_info;
+    volatile debug_stack_frame_t *sf = &debug_stack_frame;
+    /* stack frame */
+    struct ff {
+        /* general purpose registers */
+        uint32_t r0, r1, r2, r3;
+        /* all other registers */
+        uint32_t r12, lr, pc, xpsr; 
+    } PACKED *frame = sp;
+
+    /* copy general purpose registers */
+    sf->r0 = frame->r0, sf->r1 = frame->r1; 
+    sf->r2 = frame->r2, sf->r3 = frame->r3, sf->r12 = frame->r12;
+    /* copy the rest of the registers */
+    sf->lr = frame->lr, sf->pc = frame->pc, sf->xpsr = frame->xpsr;
+
+    /* store exception information */
+    ei->ipsr = ipsr;
+    
+    /* store system control block information */
+    si->bfar = SCB->BFAR; si->cfsr = SCB->CFSR; 
+    si->hfsr = SCB->HFSR; si->mmar = SCB->MMAR;
+    si->shcsr = SCB->SHCSR;
+}
+
 /* default interrupt/exception handler */
 void DefHndl_DefaultHandler(void)
 {
+    /* read the stack pointer */
+    void * sp = (void *)Arch_ReadMSP();
+    /* read the interrupt program status reg */
+    uint32_t ipsr = Arch_ReadIPSR();
+
+    /* dump all the information */
+    DefHndl_Dump(sp, ipsr);
+
+    /* watchog will have the pleasure of kicking the system */
     while (1);
 }

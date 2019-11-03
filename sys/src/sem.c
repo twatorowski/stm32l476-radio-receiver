@@ -90,7 +90,7 @@ int Sem_Lock(sem_t *s, cb_t cb)
         /* append callback */
         rc = Sem_AppendCallback(s, cb);
         /* sanity check */
-        assert(rc != EFATAL);
+        assert(rc != EFATAL, "no space for semaphore callback");
         /* callback was stored, and if the append function acquired the lock 
          * then all we need to do in order to execute all of the enlisted 
          * callbacks is to call the `release` function */
@@ -109,7 +109,8 @@ int Sem_Release(sem_t *s)
         /* release the semaphore */
         do {
             /* make sure we don't release the 'released' semaphore */
-            assert(Atomic_LDR32(&s->released) == 0);
+            assert(Atomic_LDR32(&s->released) == 0, 
+                "semapohre already released");
         /* try to update the value */
         } while (Atomic_STR32(&s->released, 1) != EOK);
     /* still got some chained callbacks to be executed */

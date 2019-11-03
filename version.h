@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "util/concatstr.h"
+
 /* software version: major */
 #ifndef VERSION_SW_MAJOR
 #define VERSION_SW_MAJOR						1
@@ -36,21 +38,18 @@
 #define VERSION_HW_BUILD						0
 #endif
 
-/* this is a helper to covert numbers to strings */
-#define _VERSION_CONCATSTR(x)				    #x
-#define VERSION_CONCATSTR(x)					_VERSION_CONCATSTR(x)
 
 /* software version as a string */
 #define VERSION_SW_STR						    \
-    VERSION_CONCATSTR(VERSION_SW_MAJOR) "."     \
-    VERSION_CONCATSTR(VERSION_SW_MINOR) "."     \
-    VERSION_CONCATSTR(VERSION_SW_BUILD)
+    CONCATSTR(VERSION_SW_MAJOR) "."             \
+    CONCATSTR(VERSION_SW_MINOR) "."             \
+    CONCATSTR(VERSION_SW_BUILD)
 
 /* hardware version as a string */
 #define VERSION_HW_STR					        \
-    VERSION_CONCATSTR(VERSION_HW_MAJOR) "."     \
-    VERSION_CONCATSTR(VERSION_HW_MINOR) "."     \
-    VERSION_CONCATSTR(VERSION_HW_BUILD)
+    CONCATSTR(VERSION_HW_MAJOR) "."             \
+    CONCATSTR(VERSION_HW_MINOR) "."             \
+    CONCATSTR(VERSION_HW_BUILD)
 
 /* version type */
 typedef struct version {

@@ -98,7 +98,7 @@ static void USART2_TxTransferComplete(void)
         tx_cb = CB_NONE;
     /* async call was made? */
     } else if (tx_cb != CB_NONE) {
-        tx_cb(&tx_size);
+        tx_cb(&tx_cb_arg);
     }
 }
 
