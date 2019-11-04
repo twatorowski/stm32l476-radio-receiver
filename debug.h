@@ -25,8 +25,13 @@
 	#undef DEBUG
 #endif
 
+/** @brief valid entry marker */
+#define DEBUG_VALID_ENTRY               0xdeadbeef
+
 /** @brief debugger stack frame for further display */
 typedef struct debug_stack_frame {
+    /**< valid entry */
+    uint32_t valid;
     /* general purpose registers */
     uint32_t r0, r1, r2, r3; 
     /* other registers */
@@ -35,12 +40,16 @@ typedef struct debug_stack_frame {
 
 /** @brief additional exception information */
 typedef struct debug_exc_info {
+    /**< valid entry */
+    uint32_t valid;
     /* interrupt program status register */
     uint32_t ipsr;
 } PACKED debug_exc_info_t;
 
 /** @brief additional system control block information */
 typedef struct debug_scb_info {
+    /**< valid entry */
+    uint32_t valid;
     /**< Configurable Fault Status Register */
     uint32_t cfsr;
     /**< HardFault Status Register */
@@ -55,6 +64,8 @@ typedef struct debug_scb_info {
 
 /** @brief last assert information */
 typedef struct {
+    /**< valid entry */
+    uint32_t valid;
     /**< assert message */
     const char *message;
 } PACKED debug_assert_info_t;

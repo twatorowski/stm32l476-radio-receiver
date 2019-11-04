@@ -33,14 +33,20 @@ static void DefHndl_Dump(void *sp, uint32_t ipsr)
     sf->r2 = frame->r2, sf->r3 = frame->r3, sf->r12 = frame->r12;
     /* copy the rest of the registers */
     sf->lr = frame->lr, sf->pc = frame->pc, sf->xpsr = frame->xpsr;
+    /* set as valid */
+    sf->valid = DEBUG_VALID_ENTRY;
 
     /* store exception information */
     ei->ipsr = ipsr;
+    /* set as valid */
+    ei->valid = DEBUG_VALID_ENTRY;
     
     /* store system control block information */
     si->bfar = SCB->BFAR; si->cfsr = SCB->CFSR; 
     si->hfsr = SCB->HFSR; si->mmar = SCB->MMAR;
     si->shcsr = SCB->SHCSR;
+    /* set as valid */
+    si->valid = DEBUG_VALID_ENTRY;
 }
 
 /* default interrupt/exception handler */

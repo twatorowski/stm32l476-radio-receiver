@@ -24,7 +24,6 @@ void Init(void)
 
 }
 
-
 /* program main function */
 void Main(void)
 {
@@ -48,10 +47,14 @@ void Main(void)
     /* initialize usart2 test */
     TestUSART2_Init();
 
+    int i = 0;
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
 		AT_Poll();
+
+        i++;
+        assert(i < 1000000, "oopsey...");
         
         /* tests */
         /* poll usart2 test */

@@ -30,13 +30,18 @@ static void Debug_PrintIntro(void)
     dprintf("-------------------------------------------------------\n", 0);
 	dprintf("Radio 2.4.0, hw = %s, sw = %s\n", VERSION_HW_STR, 
         VERSION_HW_STR);
+    dprintf("-------------------------------------------------------\n", 0);
 }
 
 /* display the stack frame */
 static void Debug_PrintStackFrame(debug_stack_frame_t *sf)
 {
+    /* not a valid entry? */
+    if ((sf->valid ^= DEBUG_VALID_ENTRY) != 0)
+        return;
+
     /* intro message */
-    dprintf("stack frame:\n", 0);
+    dprintf("STACK FRAME:\n", 0);
     /* show the values of the registers r0-r3 */
     dprintf("r0 = %#x, r1 = %#x, r2 = %#x, r3 = %#x\n", 
         sf->r0, sf->r1, sf->r2, sf->r3);
@@ -48,8 +53,12 @@ static void Debug_PrintStackFrame(debug_stack_frame_t *sf)
 /* print the exception information */
 static void Debug_PrintExcInfo(debug_exc_info_t *ei)
 {
+    /* not a valid entry? */
+    if ((ei->valid ^= DEBUG_VALID_ENTRY) != 0)
+        return;
+
     /* intro message */
-    dprintf("exception information:\n", 0);
+    dprintf("EXCEPTION INFO:\n", 0);
     /* show the values of the interrupt program status register */
     dprintf("ipsr = %#x\n", ei->ipsr);
 }
@@ -57,23 +66,32 @@ static void Debug_PrintExcInfo(debug_exc_info_t *ei)
 /* print the system control block information */
 static void Debug_PrintSCBInfo(debug_scb_info_t *si)
 {
+    /* not a valid entry? */
+    if ((si->valid ^= DEBUG_VALID_ENTRY) != 0)
+        return;
+
     /* intro message */
-    dprintf("system control block:\n", 0);
+    dprintf("SYSTEM CONTROL BLOCK:\n", 0);
     /* show the values of scb registers */
-    dprintf("cfsr = %#x, hfsr = %#x, mmar = %#x, bfar = %#x\n", 
-        si->cfsr, si->hfsr, si->mmar, si->bfar);
+    dprintf("cfsr = %#x, hfsr = %#x\n", si->cfsr, si->hfsr);
     /* show pending exceptions */
-    dprintf("shcsr = %#x\n", si->shcsr);
+    dprintf("mmar = %#x, bfar = %#x, shcsr = %#x\n", 
+        si->mmar, si->bfar, si->shcsr);
 }
 
 /* print the system control block information */
 static void Debug_PrintAssertInfo(debug_assert_info_t *ai)
 {
+    /* not a valid entry? */
+    if ((ai->valid ^= DEBUG_VALID_ENTRY) != 0)
+        return;
+
     /* intro message */
-    dprintf("assert info:\n", 0);
+    dprintf("LAST ASSERT INFO:\n", 0);
     /* show last assert message */
-    dprintf("message: %.128s\n", ai->message);
+    dprintf("message = %.128s\n", ai->message);
 }
+
 
 /* initialize debugging */
 int Debug_Init(void)

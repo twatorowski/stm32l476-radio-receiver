@@ -29,6 +29,8 @@
         if (!(x)) {                                             \
             /* set the assert message */                        \
             debug_assert_info.message = ASSERT_MSG_PRFX msg;    \
+            /* set the debug information as valid */            \
+            debug_assert_info.valid = DEBUG_VALID_ENTRY;        \
             /* endless loop */                                  \
             while(1);                                           \
         }                                                       \
