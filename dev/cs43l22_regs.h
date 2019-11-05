@@ -1,0 +1,55 @@
+/**
+ * @file cs43l22_regs.h
+ * 
+ * @date 2019-11-05
+ * @author twatorowski
+ * 
+ * @brief Registers of the CS43L22 DAC
+ */
+
+#ifndef DEV_CS43L22_REGS_H_
+#define DEV_CS43L22_REGS_H_
+
+/* device id register value */
+#define CS43L22_REG_ID_VALUE                0xE0
+
+
+/* register list */
+#define CS43L22_REG_ID						0x01
+#define CS43L22_REG_POWER_CTL_1				0x02
+#define CS43L22_REG_POWER_CTL_2				0x04
+#define CS43L22_REG_CLOCKING_CTL			0x05
+#define CS43L22_REG_IFACE_CTL_1				0x06
+#define CS43L22_REG_IFACE_CTL_2				0x07
+#define CS43L22_REG_PASS_A					0x08
+#define CS43L22_REG_PASS_B					0x09
+#define CS43L22_REG_ANA_ZC_SR				0x0A
+#define CS43L22_REG_PASS_GANG				0x0C
+#define CS43L22_REG_PLAYBACK_CTL_1			0x0D
+#define CS43L22_REG_MISC_CTL				0x0E
+#define CS43L22_REG_PLAYBACK_CTL_2			0x0F
+#define CS43L22_REG_PASS_A_VOL				0x14
+#define CS43L22_REG_PASS_B_VOL				0x15
+#define CS43L22_REG_PCM_A_VOL				0x1A
+#define CS43L22_REG_PCM_B_VOL				0x1B
+#define CS43L22_REG_BEEP_FREQ_ON			0x1C
+#define CS43L22_REG_BEEP_VOL_OFF			0x1D
+#define CS43L22_REG_BEEP_TONE				0x1E
+#define CS43L22_REG_TONE_CTL				0x1F
+#define CS43L22_REG_MASTER_A_VOL			0x20
+#define CS43L22_REG_MASTER_B_VOL			0x21
+#define CS43L22_REG_HEAD_A_VOL				0x22
+#define CS43L22_REG_HEAD_B_VOL				0x23
+#define CS43L22_REG_SPEAKER_A_VOL			0x24
+#define CS43L22_REG_SPEAKER_B_VOL			0x25
+#define CS43L22_REG_CHAN_MIX_SWAP			0x26
+#define CS43L22_REG_LIMIT_CTL1				0x27
+#define CS43L22_REG_LIMIT_CTL2				0x28
+#define CS43L22_REG_LIMIT_ATTACK			0x29
+#define CS43L22_REG_OVERFL_CLK_STATUS		0x2E
+#define CS43L22_REG_BATT_COMP				0x2F
+#define CS43L22_REG_VP_BATT_LVL				0x30
+#define CS43L22_REG_SPEAKER_STATUS			0x31
+#define CS43L22_REG_CP_FREQUENCY			0x34
+
+#endif /* DEV_CS43L22_REGS_H_ */

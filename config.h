@@ -89,4 +89,10 @@
 #define DEC_DECIMATION_RATE                         32
 /** @} */
 
+/** @name CS43L22 configuration */
+/** @{ */
+/** @brief DAC's i2c address */
+#define CS43L22_ADDR                                0x4A
+/** @} */
+
 #endif /* CONFIG_H_ */

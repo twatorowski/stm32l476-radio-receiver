@@ -80,7 +80,7 @@ extern debug_assert_info_t debug_assert_info;
 #ifdef DEBUG
 
 /* debug message prefix */
-#define DBG_MSG_PRFX                                                            \
+#define DBG_MSG_PRFX                                                        \
     "+D: [" __FILE__ ":" CONCATSTR(__LINE__) "]"
 
 /**
@@ -93,12 +93,13 @@ extern debug_assert_info_t debug_assert_info;
 		char __debug_buf[AT_RES_MAX_LINE_LEN];								\
 		/* produce string */												\
 		int __l = snprintf(__debug_buf, sizeof(__debug_buf),                \
-            DBG_MSG_PRFX fmt, ## __VA_ARGS__);			                        \
+            DBG_MSG_PRFX fmt, ## __VA_ARGS__);			                    \
 		/* try to send debug over the tp */									\
 		ATNtfyDebug_PutDebugData(__debug_buf, __l);							\
 	} while (0)
 
 #else
+#warning "HERE"
 /**
  * @brief non-blocking debug routine. To be used like printf()
  */

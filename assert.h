@@ -10,8 +10,10 @@
 #ifndef ASSERT_H_
 #define ASSERT_H_
 
-#include "debug.h"
 #include "util/concatstr.h"
+
+#define DEBUG
+#include "debug.h"
 
 /* assert message prefix */
 #define ASSERT_MSG_PRFX                                         \

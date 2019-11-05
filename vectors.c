@@ -17,6 +17,10 @@
 #include "stm32l476/stm32l476.h"
 
 /* includes with interrupt/exceptions handlers */
+#include "dev/analog.h"
+#include "dev/deci.h"
+#include "dev/decq.h"
+#include "dev/i2c1.h"
 #include "dev/usart2.h"
 
 /* shorthands so that the vector table looks neat! */
@@ -40,4 +44,15 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     SET_INT_VEC(STM32_INT_USART2, USART2_USART2Isr),
     SET_INT_VEC(STM32_INT_DMA1C7, USART2_DMA1C7Isr),
     SET_INT_VEC(STM32_INT_DMA1C6, USART2_DMA1C6Isr),
+
+    /* ADC sampler */
+    SET_INT_VEC(STM32_INT_DMA1C1, Analog_DMA1C1Isr),
+
+    /* decimators */
+    SET_INT_VEC(STM32_INT_DMA1C4, DecI_DMA1C4Isr),
+    SET_INT_VEC(STM32_INT_DMA1C5, DecQ_DMA1C5Isr),
+
+    /* i2c1 */
+    SET_INT_VEC(STM32_INT_I2C1_EV, I2C1_I2C1EvIsr),
+    SET_INT_VEC(STM32_INT_I2C1_ER, I2C1_I2C1ErIsr),
 };

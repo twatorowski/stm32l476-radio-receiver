@@ -8,10 +8,13 @@
  */
 
 #include "compiler.h"
-#include "debug.h"
+
 #include "err.h"
 #include "arch/arch.h"
 #include "stm32l476/scb.h"
+
+#define DEBUG
+#include "debug.h"
 
 /* dump information to storage */
 static void DefHndl_Dump(void *sp, uint32_t ipsr)

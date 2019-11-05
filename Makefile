@@ -36,6 +36,8 @@ SRC += ./at/ntfy/src/debug.c
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
 SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
 SRC += ./dev/src/deci.c ./dev/src/decq.c
+SRC += ./dev/src/analog.c ./dev/src/i2c1.c
+SRC += ./dev/src/cs43l22.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
@@ -153,8 +155,10 @@ CC_FLAGS += -g -fdata-sections -ffunction-sections
 CC_FLAGS += -Wall -Wno-format
 CC_FLAGS += -pedantic-errors -Wno-implicit-fallthrough
 # use defines such as M_PI from math.h
-CC_FLAGS += -D _USE_MATH_DEFINES
+CC_FLAGS += -D_USE_MATH_DEFINES
 CC_FLAGS += $(addprefix -I,$(INC_DIRS))
+# development flag
+CC_FLAGS += -DDEVELOPMENT=$(DEVELOPMENT)
 # version information (software)
 CC_FLAGS += -DSW_VER_MAJOR=$(SW_VER_MAJOR)
 CC_FLAGS += -DSW_VER_MINOR=$(SW_VER_MINOR)

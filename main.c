@@ -18,6 +18,9 @@
 #define DEBUG
 #include "debug.h"
 
+
+volatile int abc[DEVELOPMENT];
+
 /* program init function, called before main with interrupts disabled */
 void Init(void)
 {
@@ -47,14 +50,10 @@ void Main(void)
     /* initialize usart2 test */
     TestUSART2_Init();
 
-    int i = 0;
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
 		AT_Poll();
-
-        i++;
-        assert(i < 1000000, "oopsey...");
         
         /* tests */
         /* poll usart2 test */

@@ -42,15 +42,14 @@
 #define EI2C_TRANSFER_ERROR                     -21
 /** @} */
 
-/** @name USART error codes */
+/** @name CS43L22 error codes */
 /** @{ */
+/** @brief chip not present on the i2c bus */
+#define ECS43L22_NOT_PRESENT                    -30
+/** @brief unsupported volume setting */
+#define ECS43L22_UNSUPPORTED_VOLUME             -31
 /** @} */
 
-/** @name CIRCBUF error codes */
-/** @{ */
-/** @brief no space in buffer for alloc */
-#define ECIRCBUF_NO_SPACE                       -30
-/** @} */
 
 /** @} */
 
