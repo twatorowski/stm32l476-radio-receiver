@@ -35,6 +35,7 @@ SRC += ./at/ntfy/src/debug.c
 # device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
 SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
+SRC += ./dev/src/deci.c ./dev/src/decq.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
