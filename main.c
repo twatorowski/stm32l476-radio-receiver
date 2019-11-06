@@ -9,17 +9,20 @@
 
 #include "assert.h"
 #include "at/at.h"
+#include "dev/analog.h"
 #include "dev/cpuclock.h"
+#include "dev/deci.h"
+#include "dev/decq.h"
 #include "dev/fpu.h"
+#include "dev/i2c1.h"
+#include "dev/rfin.h"
+#include "dev/sai1a.h"
 #include "dev/usart2.h"
 #include "dev/watchdog.h"
 #include "test/usart2.h"
 
 #define DEBUG
 #include "debug.h"
-
-
-volatile int abc[DEVELOPMENT];
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -39,9 +42,27 @@ void Main(void)
 
     /* start debugging */
     Debug_Init();
+
     /* internals */
     /* initialize usart2 */
     USART2_Init();
+    /* intiialize adc sampler module */
+    Analog_Init();
+    /* initialize decimator for the in-phase channel */
+    DecI_Init();
+    /* initialize decimator for the quadrature channel */
+    DecQ_Init();
+    /* initialize i2c1 */
+	I2C1_Init();
+	/* initialize sai1a interface */
+	SAI1A_Init();
+    /* initialize rf input pin */
+    RFIn_Init();
+
+    /* externals */
+    
+
+
 
     /* at commands protocol */
     AT_Init();
