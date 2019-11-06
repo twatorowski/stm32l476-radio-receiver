@@ -70,11 +70,12 @@
 #define INT_PRI_AWAIT                               0xf0
 /** @brief external voltage monitor interrupt priority */
 #define INT_PRI_VIN                                 0xf0
-/** @brief dac fetching interrupt priority, keep at the same level as the 
- * microphone interrupt priority level (0x00 - highest, 0xf0 lowest) */
-#define SAI2B_PRIORITY							    0x20
 /** @brief decimator interrupt priority */
-#define INT_PRI_DEC                                 0x20                           
+#define INT_PRI_DEC                                 0x20    
+/** @brief exti multiplexer interrupt priority for exti[5-9] */
+#define INT_PRI_EXI5_9                              0xf0
+/** @brief exti multiplexer interrupt priority for exti[10-15] */
+#define INT_PRI_EXI10_15                            0xf0
 /** @} */
 
 /** @name USART2 configuration */

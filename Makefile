@@ -38,7 +38,8 @@ SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
 SRC += ./dev/src/deci.c ./dev/src/decq.c
 SRC += ./dev/src/analog.c ./dev/src/i2c1.c
 SRC += ./dev/src/cs43l22.c ./dev/src/rfin.c
-SRC += ./dev/src/sai1a.c
+SRC += ./dev/src/sai1a.c ./dev/src/display.c
+SRC += ./dev/src/extimux.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c

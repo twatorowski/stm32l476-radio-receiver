@@ -13,6 +13,7 @@
 #include "dev/cpuclock.h"
 #include "dev/deci.h"
 #include "dev/decq.h"
+#include "dev/display.h"
 #include "dev/fpu.h"
 #include "dev/i2c1.h"
 #include "dev/rfin.h"
@@ -60,7 +61,11 @@ void Main(void)
     RFIn_Init();
 
     /* externals */
+    /* lcd display */
+    Display_Init();
+
     
+
 
 
 
