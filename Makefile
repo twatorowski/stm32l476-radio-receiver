@@ -20,6 +20,7 @@ HW_VER_BUILD = 0
 # ----------------------------- SOURCES -----------------------------
 # put all of your sources here (use / as path separator)
 SRC += ./startup.c ./vectors.c ./defhndl.c ./image.c ./main.c ./debug.c
+SRC += ./reset.c
 
 # at protocol
 SRC += ./at/src/at.c ./at/src/cmd.c
@@ -39,14 +40,15 @@ SRC += ./dev/src/deci.c ./dev/src/decq.c
 SRC += ./dev/src/analog.c ./dev/src/i2c1.c
 SRC += ./dev/src/cs43l22.c ./dev/src/rfin.c
 SRC += ./dev/src/sai1a.c ./dev/src/display.c
-SRC += ./dev/src/extimux.c
+SRC += ./dev/src/extimux.c ./dev/src/joystick.c
+SRC += ./dev/src/await.c ./dev/src/systime.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
 SRC += ./sys/src/sem.c
 
 # tests
-SRC += ./test/src/usart2.c
+SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

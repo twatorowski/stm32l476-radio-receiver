@@ -10,7 +10,7 @@
 #ifndef DEV_SYSTIME_H_
 #define DEV_SYSTIME_H_
 
-#include <stdio.h>
+#include <stdint.h>
 
 /**
  * @brief Initialize System Timer Module

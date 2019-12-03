@@ -10,20 +10,28 @@
 #include "assert.h"
 #include "at/at.h"
 #include "dev/analog.h"
+#include "dev/await.h"
 #include "dev/cpuclock.h"
+#include "dev/cs43l22.h"
 #include "dev/deci.h"
 #include "dev/decq.h"
 #include "dev/display.h"
+#include "dev/extimux.h"
 #include "dev/fpu.h"
 #include "dev/i2c1.h"
+#include "dev/joystick.h"
 #include "dev/rfin.h"
 #include "dev/sai1a.h"
+#include "dev/systime.h"
 #include "dev/usart2.h"
 #include "dev/watchdog.h"
+#include "test/dac_sine.h"
 #include "test/usart2.h"
 
 #define DEBUG
 #include "debug.h"
+
+#include "sys/time.h"
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -36,15 +44,22 @@ void Main(void)
 {
     /* initialize the watchdog */
     Watchdog_Init();
-    /* setup the cpu frequency */
-    CpuClock_Init();
     /* enable the fpu */
     FPU_Init();
+
+    /* setup the cpu frequency */
+    CpuClock_Init();
+    /* start systime */
+	SysTime_Init();
 
     /* start debugging */
     Debug_Init();
 
     /* internals */
+    /* exti mux */
+    ExtiMux_Init();
+    /* async awaiter */
+    Await_Init();
     /* initialize usart2 */
     USART2_Init();
     /* intiialize adc sampler module */
@@ -63,9 +78,10 @@ void Main(void)
     /* externals */
     /* lcd display */
     Display_Init();
-
-    
-
+    /* joystick */
+    Joystick_Init();
+    /* bring up the dac */
+    CS43L22_Init();
 
 
 
@@ -74,7 +90,9 @@ void Main(void)
 
     /* tests */
     /* initialize usart2 test */
-    TestUSART2_Init();
+    // TestUSART2_Init();
+    /* initialize dac test */
+    TestDACSine_Init();
 
 	/* execution loop */
     while (1) {
@@ -83,7 +101,9 @@ void Main(void)
         
         /* tests */
         /* poll usart2 test */
-        TestUSART2_Poll();
+        // TestUSART2_Poll();
+        /* poll dac test */
+        TestDACSine_Poll();
 
         /* kick the dog counter */
         Watchdog_Kick();

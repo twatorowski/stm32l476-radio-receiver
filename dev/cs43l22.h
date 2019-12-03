@@ -10,6 +10,8 @@
 #ifndef DEV_CS43L22_H_
 #define DEV_CS43L22_H_
 
+#include "sys/sem.h"
+
 /** @brief callback argument */
 typedef struct {
 	/**< error code */
@@ -20,6 +22,17 @@ typedef struct {
         int id;
     };
 } cs43l22_cbarg_t;
+
+
+/** @brief dac access semaphore */
+extern sem_t cs43l22_sem;
+
+/**
+ * @brief Initialize the DAC module.
+ * 
+ * @return int status code (@ref ERR_ERROR_CODES)
+ */
+int CS43L22_Init(void);
 
 /**
  * @brief Read the identification register
@@ -56,6 +69,6 @@ cs43l22_cbarg_t * CS43L22_Play(cb_t cb);
  * 
  * @return cs43l22_cbarg_t * status for CB_SYNC calls
  */
-cs43l22_cbarg_t * CS43L22_Volume(int db, cb_t cb);
+cs43l22_cbarg_t * CS43L22_SetVolume(int db, cb_t cb);
 
 #endif /* DEV_CS43L22_H_ */

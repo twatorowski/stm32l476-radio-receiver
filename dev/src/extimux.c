@@ -28,7 +28,7 @@ void ExtiMux_Exti5_9Isr(void)
 
 	/* key press interrupt */
 	if (pr & EXTI_PR1_PIF5)
-		Joystick_Exti1_3_5Isr();
+		Joystick_Exti0_3_5Isr();
 }
 
 /* exti interrupt mux for lines 10 to 15 */

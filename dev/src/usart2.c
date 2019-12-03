@@ -210,7 +210,7 @@ int USART2_Init(void)
             DMA_CCR_HTIE;
 
 	/* configure baud rate */
-	USART2->BRR = (2 * CPU_FREQ + USART2_BAUD_RATE / 2) / USART2_BAUD_RATE;
+	USART2->BRR = (2 * CPUCLOCK_FREQ + USART2_BAUD_RATE / 2) / USART2_BAUD_RATE;
     /* x-mission dma request generation enable */
     USART2->CR3 = USART_CR3_DMAR | USART_CR3_DMAT;
     /* start the receiver and transmitter */

@@ -12,6 +12,8 @@
 #ifndef DEV_SAI1A_H_
 #define DEV_SAI1A_H_
 
+#include <stdint.h>
+
 /**
  * @brief Initialize SAI1A Audio Interface.
  * 
@@ -26,7 +28,7 @@ int SAI1A_Init(void);
  * @param ptr buffer pointer
  * @param num size of buffer expressed in number of samples
  */
-void SAI1A_StartStreaming(int32_t *ptr, int num);
+void SAI1A_StartStreaming(const int32_t *ptr, int num);
 
 
 #endif /* DEV_SAI1A_H_ */

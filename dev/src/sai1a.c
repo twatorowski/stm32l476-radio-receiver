@@ -86,7 +86,7 @@ int SAI1A_Init(void)
 }
 
 /* start streaming data */
-void SAI1A_StartStreaming(int32_t *ptr, int num)
+void SAI1A_StartStreaming(const int32_t *ptr, int num)
 {
 	/* enter critical section */
 	Critical_Enter();

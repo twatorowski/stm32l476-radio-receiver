@@ -28,7 +28,18 @@
 /** @name System CPU Frequency */
 /** @{ */
 /** @brief system frequency in Hz */
-#define CPU_FREQ							        80e6
+#define CPUCLOCK_FREQ							    80000000
+/** @} */
+
+/** @name Debug configuration */
+/** @{ */
+/** @brief debugging is enabled?  */
+#define DEBUG_ENABLED							    DEVELOPMENT
+/** @brief number of interrupt active/interrupt pending 32-bit bitmask registers 
+ * to be stored during the execution of default handler. In case of cortex-m4 
+ * this should be equal to the number of implemented IABR/ISPR registers within 
+ * the NVIC */
+#define DEBUG_NUM_IABR_ISBR                         4
 /** @} */
 
 /** @name System Event configuration */

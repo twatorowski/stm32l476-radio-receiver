@@ -18,9 +18,13 @@
 
 /* includes with interrupt/exceptions handlers */
 #include "dev/analog.h"
+#include "dev/await.h"
 #include "dev/deci.h"
 #include "dev/decq.h"
+#include "dev/extimux.h"
 #include "dev/i2c1.h"
+#include "dev/joystick.h"
+#include "dev/sai1a.h"
 #include "dev/usart2.h"
 
 /* shorthands so that the vector table looks neat! */
@@ -55,4 +59,17 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     /* i2c1 */
     SET_INT_VEC(STM32_INT_I2C1_EV, I2C1_I2C1EvIsr),
     SET_INT_VEC(STM32_INT_I2C1_ER, I2C1_I2C1ErIsr),
+
+    /* await module */
+    SET_INT_VEC(STM32_INT_TIM3, Await_TIM3Isr),
+
+    /* joystick interrupts */
+    SET_INT_VEC(STM32_INT_EXTI0, Joystick_Exti0_3_5Isr),
+    SET_INT_VEC(STM32_INT_EXTI1, Joystick_Exti0_3_5Isr),
+    SET_INT_VEC(STM32_INT_EXTI2, Joystick_Exti0_3_5Isr),
+    SET_INT_VEC(STM32_INT_EXTI3, Joystick_Exti0_3_5Isr),
+
+    /* extimux */
+    SET_INT_VEC(STM32_INT_EXTI5_9, ExtiMux_Exti5_9Isr),
+    SET_INT_VEC(STM32_INT_EXTI10_15, ExtiMux_Exti10_15Isr),
 };

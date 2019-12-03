@@ -16,6 +16,7 @@
 
 #define DEBUG
 #include "debug.h"
+#include "debug_dump.h"
 
 /** storage space for storing mcu state during critical failures */
 debug_scb_info_t SECTION(".no_init") debug_scb_info;
@@ -27,6 +28,7 @@ debug_assert_info_t SECTION(".no_init") debug_assert_info;
 static void Debug_PrintIntro(void)
 {
     /* initial string */
+    dprintf("\n", 0);
     dprintf("-------------------------------------------------------\n", 0);
 	dprintf("Radio 2.4.0, hw = %s, sw = %s\n", VERSION_HW_STR, 
         VERSION_HW_STR);
@@ -83,13 +85,16 @@ static void Debug_PrintSCBInfo(debug_scb_info_t *si)
 static void Debug_PrintAssertInfo(debug_assert_info_t *ai)
 {
     /* not a valid entry? */
-    if ((ai->valid ^= DEBUG_VALID_ENTRY) != 0)
+    if (ai->valid != DEBUG_VALID_ENTRY)
         return;
 
     /* intro message */
     dprintf("LAST ASSERT INFO:\n", 0);
     /* show last assert message */
     dprintf("message = %.128s\n", ai->message);
+    dprintf("additional info = %#x\n", ai->additional_info);
+    /* invalidate */
+    ai->valid = 0;
 }
 
 

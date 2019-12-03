@@ -7,6 +7,7 @@
  * @brief System Timer Module
  */
 
+#include "config.h"
 #include "err.h"
 #include "dev/watchdog.h"
 #include "stm32l476/rcc.h"
@@ -24,7 +25,7 @@ int SysTime_Init(void)
 	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM5EN;
 
 	/* set prescaler (500us) */
-	TIM5->PSC = 39999;
+	TIM5->PSC = (CPUCLOCK_FREQ / 2000) - 1;
 	/* set autoreload value */
 	TIM5->ARR = 0xffffffff;
 	/* reset value */

@@ -14,7 +14,7 @@
 #include "stm32l476/scb.h"
 
 #define DEBUG
-#include "debug.h"
+#include "debug_dump.h"
 
 /* dump information to storage */
 static void DefHndl_Dump(void *sp, uint32_t ipsr)
