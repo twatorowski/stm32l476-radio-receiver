@@ -107,4 +107,12 @@
 #define CS43L22_ADDR                                0x4A
 /** @} */
 
+/** @name RF paramaters  */
+/** @{ */
+/** @brief Sampling frequencu */
+#define RF_SAMPLING_FREQ                            1000000
+/** @} */
+
+
+
 #endif /* CONFIG_H_ */

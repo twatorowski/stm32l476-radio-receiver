@@ -43,12 +43,20 @@ SRC += ./dev/src/sai1a.c ./dev/src/display.c
 SRC += ./dev/src/extimux.c ./dev/src/joystick.c
 SRC += ./dev/src/await.c ./dev/src/systime.c
 
+# digital signal processing
+SRC += ./dsp/src/biquad.c ./dsp/src/float_fixp.c
+
+# radio modules
+SRC += ./radio/src/mix1.c ./radio/src/decimate.c
+SRC += ./radio/src/mix2.c
+
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
 SRC += ./sys/src/sem.c
 
 # tests
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
+SRC += ./test/src/dec.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c
@@ -66,7 +74,7 @@ LIB_DIRS = .
 
 # ----------------------- OPTIMIZATION LEVEL ------------------------
 # use '-O0' (no optimization) for debugging or (-Os) for release
-OPT_LEVEL = -Os
+OPT_LEVEL = -O0
 
 # ----------------------- OUTPUT DIRECTORIES ------------------------
 # object files directory (use / as path separator)

@@ -28,20 +28,20 @@
  * reporting placeholder
  * @param info additional pointer info 
  * */
-#define assert(x, msg, info)                                    \
-    /* protect from compilers */                                \
-    do {                                                        \
-        /* check condition */                                   \
-        if (!(x)) {                                             \
-            /* set the assert message */                        \
-            debug_assert_info.message = ASSERT_MSG_PRFX msg;    \
-            /* set the additional info */                       \
-            debug_assert_info.additional_info = info;           \
-            /* set the debug information as valid */            \
-            debug_assert_info.valid = DEBUG_VALID_ENTRY;        \
-            /* reset the mcu */                                 \
-            Reset_ResetMCU();                                   \
-        }                                                       \
+#define assert(x, msg, info)                                        \
+    /* protect from compilers */                                    \
+    do {                                                            \
+        /* check condition */                                       \
+        if (!(x)) {                                                 \
+            /* set the assert message */                            \
+            debug_assert_info.message = ASSERT_MSG_PRFX msg;        \
+            /* set the additional info */                           \
+            debug_assert_info.additional_info = (uintptr_t)info;    \
+            /* set the debug information as valid */                \
+            debug_assert_info.valid = DEBUG_VALID_ENTRY;            \
+            /* reset the mcu */                                     \
+            Reset_ResetMCU();                                       \
+        }                                                           \
     } while(0)                                 
 
 

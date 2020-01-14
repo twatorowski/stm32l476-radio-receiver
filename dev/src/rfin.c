@@ -7,10 +7,13 @@
  * @brief RF Input driver module
  */
 
+#include "assert.h"
+#include "compiler.h"
 #include "err.h"
 #include "stm32l476/rcc.h"
 #include "stm32l476/gpio.h"
 #include "sys/critical.h"
+#include "util/elems.h"
 
 #define DEBUG
 #include "debug.h"

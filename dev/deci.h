@@ -30,13 +30,13 @@ int DecI_Init(void);
  * represented in 32-bit words.
  * 
  * @param in input data pointer
- * @param out output data pointer
  * @param num number of samples to decimate
+ * @param out output data pointer
  * @param cb callback to call when the decimation is over
  * 
  * @return void * null pointer
  */
-void * DecI_Decimate(int16_t *in, int32_t *out, int num, cb_t cb);
+void * DecI_Decimate(const int16_t *in, int num, int32_t *out,  cb_t cb);
 
 
 

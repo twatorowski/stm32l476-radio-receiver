@@ -32,6 +32,8 @@
 #define NAKED				__attribute__ ((naked))
 /* prevent inlining */
 #define NOINLINE			__attribute__ ((noinline))
+/* loop unrolling attribute */
+#define LOOP_UNROLL         __attribute__ ((optimize ("unroll-loops")))
 
 
 /* additional helpers/shorthands, used has to go here otherwise the optimizer may

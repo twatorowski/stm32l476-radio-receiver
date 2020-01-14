@@ -73,7 +73,7 @@ static int TestDACSine_EnCallback(void *ptr)
         /* start the serial audio data stream */
         SAI1A_StartStreaming((int32_t *)sine, elems(sine)); 
         /* lock the await module */
-        Await_CallMeLater(100, TestDACSine_EnCallback);
+        Await_CallMeLater(100, TestDACSine_EnCallback, 0);
     } break;
     /* do the initialization */
     case INIT : {
@@ -102,7 +102,7 @@ int TestDACSine_Init(void)
     /* report status */
     return EOK;
 }
-
+int done;
 /* poll test */
 void TestDACSine_Poll(void)
 {

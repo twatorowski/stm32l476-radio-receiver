@@ -67,11 +67,11 @@ int DecQ_Init(void)
 	/* enable demod */
 	RCC->APB2ENR |= RCC_APB2ENR_DFSDMEN;
 
-	/* use dma2c7 for pushing data into Q decimator */
-	DMA2C7->CCR = DMA_CCR_MEM2MEM | DMA_CCR_DIR | DMA_CCR_MINC |
+	/* use dma2c2 for pushing data into Q decimator */
+	DMA2C2->CCR = DMA_CCR_MEM2MEM | DMA_CCR_DIR | DMA_CCR_MINC |
 			DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1;
 	/* set destination register */
-	DMA2C7->CPAR = (uint32_t)&DFSDMC1->CHDATINR;
+	DMA2C2->CPAR = (uint32_t)&DFSDMC1->CHDATINR;
 
 	/* select dma channel */
 	DMA1->CSELR = (DMA1->CSELR & ~DMA_CSELR_C5S) | DMA1_CSELR_C5S_DFSDM1;
@@ -131,11 +131,11 @@ int DecQ_Init(void)
 }
 
 /* perform filtration and decimation */
-void * DecQ_Decimate(int16_t *in, int32_t *out, int num, cb_t cb)
+void * DecQ_Decimate(const int16_t *in, int num, int32_t *out, cb_t cb)
 {
 	/* store callback */
 	callback = cb;
-	/* store output buffer size and pointer TODO: constant decimation factor  */
+	/* store output buffer size and pointer */
 	buf_smpls = num / DEC_DECIMATION_RATE, buf = out;
 
 	/* prepare output dma for Q samples */
@@ -148,13 +148,13 @@ void * DecQ_Decimate(int16_t *in, int32_t *out, int num, cb_t cb)
 	DMA1C5->CCR |= DMA_CCR_EN;
 
 	/* prepare input dma for Q samples */
-	DMA2C7->CCR &= ~DMA_CCR_EN;
+	DMA2C2->CCR &= ~DMA_CCR_EN;
 	/* set source pointer */
-	DMA2C7->CMAR = (uint32_t)(in);
+	DMA2C2->CMAR = (uint32_t)(in);
 	/* set the number of samples */
-	DMA2C7->CNDTR = num / (sizeof(out[0]) / sizeof(in[0]));
+	DMA2C2->CNDTR = num / (sizeof(out[0]) / sizeof(in[0]));
 	/* enable dma */
-	DMA2C7->CCR |= DMA_CCR_EN;
+	DMA2C2->CCR |= DMA_CCR_EN;
 
 	/* sync call was made? */
 	while (callback == CB_SYNC);

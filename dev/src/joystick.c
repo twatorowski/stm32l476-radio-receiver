@@ -34,7 +34,8 @@ void Joystick_Exti0_3_5Isr(void)
 
 	/* build up event argument */
 	joystick_evarg_t ea = { .status = Joystick_GetStatus() };
-
+    
+    /* show current status */
     dprintf("%d\n", ea.status);
 	/* notify */
 	Ev_Notify(&joystick_ev, &ea);
@@ -55,21 +56,23 @@ int Joystick_Init(void)
 	GPIOA->MODER &= ~(GPIO_MODER_MODER0 | GPIO_MODER_MODER1 | 
         GPIO_MODER_MODER2 | GPIO_MODER_MODER3 | GPIO_MODER_MODER5);
 	/* enable pull down */
-	GPIOA->PUPDR |= GPIO_PUPDR_PUPDR1_1 | GPIO_PUPDR_PUPDR2_1 |
-			GPIO_PUPDR_PUPDR3_1 | GPIO_PUPDR_PUPDR5_1;
+	GPIOA->PUPDR |= GPIO_PUPDR_PUPDR0_1 | GPIO_PUPDR_PUPDR1_1 | 
+        GPIO_PUPDR_PUPDR2_1 | GPIO_PUPDR_PUPDR3_1 | GPIO_PUPDR_PUPDR5_1;
 
-	/* route exti0-3 */
+	/* route exti0-3 to port a */
 	SYSCFG->EXTICR1 = (SYSCFG->EXTICR1 & ~(SYSCFG_EXTICR1_EXTI0 | 
         SYSCFG_EXTICR1_EXTI1 | SYSCFG_EXTICR1_EXTI2 | SYSCFG_EXTICR1_EXTI3)) |
         SYSCFG_EXTICR1_EXTI0_PA | SYSCFG_EXTICR1_EXTI1_PA | 
         SYSCFG_EXTICR1_EXTI2_PA | SYSCFG_EXTICR1_EXTI3_PA;
-	/* route exti5 */
+	/* route exti5 to port a*/
 	SYSCFG->EXTICR2 = (SYSCFG->EXTICR2 & ~SYSCFG_EXTICR2_EXTI5) |
 			SYSCFG_EXTICR2_EXTI5_PA;
 
 	/* configure for falling edge detection */
 	EXTI->RTSR1 |= EXTI_RTSR1_RT0 | EXTI_RTSR1_RT1 | EXTI_RTSR1_RT2 | 
         EXTI_RTSR1_RT3 | EXTI_RTSR1_RT5;
+    EXTI->FTSR1 &= ~(EXTI_FTSR1_FT0 | EXTI_FTSR1_FT1 | EXTI_FTSR1_FT2 | 
+        EXTI_FTSR1_FT3 | EXTI_FTSR1_FT5);
 	/* enable interrupts */
 	EXTI->IMR1 |= EXTI_IMR1_IM0 | EXTI_IMR1_IM1 | EXTI_IMR1_IM2 | 
         EXTI_IMR1_IM3 | EXTI_IMR1_IM5;

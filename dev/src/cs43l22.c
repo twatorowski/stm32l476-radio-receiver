@@ -67,7 +67,7 @@ static void CS43L22_Reset(int state, cb_t cb)
 {
     GPIOE->BSRR = state ? GPIO_BSRR_BR_3 : GPIO_BSRR_BS_3;
     /* give some delay */
-    Await_CallMeLater(5, cb);
+    Await_CallMeLater(5, cb, 0);
 }
 
 /* configuration entry applied callback */
@@ -114,7 +114,7 @@ static int CS43L22_OperationCallback(void *ptr)
                 CS43L22_ADDR, o->tfer.addr, &o->tfer.value, 1, cb);
         } break;
         /* power & reset & wait operation */
-        case OT_WAIT : Await_CallMeLater(o->wait.ms, cb); break;
+        case OT_WAIT : Await_CallMeLater(o->wait.ms, cb, 0); break;
         case OT_RESET : CS43L22_Reset(o->reset.value, cb); break;
         }
 	}
@@ -162,7 +162,6 @@ int CS43L22_Init(void)
 
     /* exit critical section */
 	Critical_Exit();
-
     /* release the ic semaphore */
     Sem_Release(&cs43l22_sem);
     /* report the initialization status */

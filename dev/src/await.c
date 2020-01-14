@@ -29,10 +29,12 @@ static struct awaiter {
     uint32_t ms;
     /* pointer to the callback function */
     cb_t callback;
-} awaiters[16];
+    /* callback argument */
+    void *arg;
+} exec[8], list[16];
 
 /* append callback to the awaiters list */
-static int Await_AddAwaiter(uint16_t ms, cb_t cb)
+static int Await_AddAwaiter(uint16_t ms, cb_t cb, void *arg)
 {
     /* local copy of the alloc index. this is the index under which the 
      * callback will be stored */
@@ -43,15 +45,15 @@ static int Await_AddAwaiter(uint16_t ms, cb_t cb)
         /* read current value of the alloc function */
         _alloc = Atomic_LDR32(&alloc);
         /* no space for next callback */
-        if (_alloc - tail == elems(awaiters))
+        if (_alloc - tail == elems(list))
             return EFATAL;
     /* try to store */
     } while (Atomic_STR32(&alloc, _alloc + 1) != EOK);
 
     /* store the callback */
-    struct awaiter *a = &awaiters[_alloc % elems(awaiters)];
+    struct awaiter *a = &list[_alloc % elems(list)];
     /* fill in the information */
-    a->callback = cb, a->ms = ms;
+    a->callback = cb, a->arg = arg, a->ms = ms;
 
     /* 1st in line? */
     if (_alloc == head) {
@@ -75,34 +77,39 @@ void Await_TIM3Isr(void)
     uint32_t sr = TIM3->SR;
     /* clear the interrupt flags */
     TIM3->SR = ~sr;
+    /* execution is still not done */
+    int running = 0;
 
-    /* process all awaiters on the list */
-    for (uint32_t i = tail; i < head; i++) {
+    /* process all awaiters on the execution list */
+    for (int i = 0; i < (int)elems(exec); i++) {
         /* get the valid pointer */
-        struct awaiter *a = &awaiters[i % elems(awaiters)];
-        /* consume a millisecond on when timer overflows */
-        if (sr & TIM_SR_UIF)
-            a->ms--;
+        struct awaiter *e = &exec[i];
+        /* consume a millisecond */
+        if ((sr & TIM_SR_UIF) && e->ms)
+            e->ms--;
+        /* we are still running the loop */
+        if (e->ms)
+            running = 1;
         /* call the callback, and then clear it's pointer */
-        if (a->ms == 0 && a->callback) 
-            a->callback(0), a->callback = 0;
-        /* drop the entry as the callback was already executed */
-        if (!a->callback && i == tail)
-            tail++;
+        if (e->ms == 0 && e->callback) 
+            e->callback(e->arg), e->callback = 0; 
+        /* got the free entry? fetch the awaiter from the list */
+        if (e->callback == 0 && tail != head) {
+            /* get the first element from the list */
+            struct awaiter *l = &list[tail % elems(list)];
+            /* copy the entry */
+            e->ms = l->ms, e->arg = l->arg, e->callback = l->callback;
+            /* free up the pointer */
+            tail++, running = 1;
+        }
     }
 
-    /* enable or disable the timer depending on whether we still have 
-     * some awaiters queued. This is the only place (and it's not re-entrant) 
-     * that messes with the timer internals so it is safe to implement this 
-     * here */
-    if (tail == head) {
+    /* execution is not complete yet */
+    if (!running) {
         /* disable the timer */
         STM32_BB(&TIM3->CR1, LSB(TIM_CR1_CEN)) = 0;
     /* still got some awaiters on the waiting list? */
     } else {
-        /* if the async await is used for the blocking functions then it would be 
-         * nice to kick the dog once in a while! */
-        Watchdog_Kick();
         /* keep the timer enabled */
         STM32_BB(&TIM3->CR1, LSB(TIM_CR1_CEN)) = 1;
     }
@@ -139,12 +146,12 @@ int Await_Init(void)
 }
 
 /* schedule call after some time has passed */
-void * Await_CallMeLater(int ms, cb_t cb)
+void * Await_CallMeLater(int ms, cb_t cb, void *arg)
 {
     /* sanity checks */
     assert(ms >= 0, "await: invalid ms value", ms);
-    assert(Await_AddAwaiter(ms, cb) == EOK, "await: no space for caller", 
-        (uintptr_t)cb);
+    assert(Await_AddAwaiter(ms, cb, arg) == EOK, 
+        "await: no space for caller", cb);
     /* report pointer */
     return 0;
 }

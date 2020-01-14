@@ -26,6 +26,7 @@
 #include "dev/usart2.h"
 #include "dev/watchdog.h"
 #include "test/dac_sine.h"
+#include "test/dec.h"
 #include "test/usart2.h"
 
 #define DEBUG
@@ -84,7 +85,6 @@ void Main(void)
     CS43L22_Init();
 
 
-
     /* at commands protocol */
     AT_Init();
 
@@ -92,7 +92,9 @@ void Main(void)
     /* initialize usart2 test */
     // TestUSART2_Init();
     /* initialize dac test */
-    TestDACSine_Init();
+    // TestDACSine_Init();
+    /* initialize decimators test */
+    // TestDec_Init();
 
 	/* execution loop */
     while (1) {
@@ -103,7 +105,9 @@ void Main(void)
         /* poll usart2 test */
         // TestUSART2_Poll();
         /* poll dac test */
-        TestDACSine_Poll();
+        // TestDACSine_Poll();
+        /* poll the decimators test */
+        // TestDec_Poll();
 
         /* kick the dog counter */
         Watchdog_Kick();

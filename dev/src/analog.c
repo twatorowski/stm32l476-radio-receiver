@@ -108,7 +108,7 @@ int Analog_Init(void)
 	 * mode */
 	ADC1->CFGR = ADC_CFGR_OVRMOD | ADC_CFGR_EXTSEL_TIM2_TRGO | ADC_CFGR_DMAEN |
 			ADC_CFGR_EXTEN_RE | ADC_CFGR_DMACFG;
-	/* enable oversampling */
+	/* enable oversampling: 2x */
 	ADC1->CFGR2 = ADC_CFGR2_TROVS | ADC_CFGR2_ROVSE;
 
 	/* clear ready flag */
@@ -140,7 +140,7 @@ void Analog_StartSampling(int channel, int pres, int16_t *ptr, int num)
 	/* disable timer */
 	TIM2->CR1 &= ~TIM_CR1_CEN;
 	/* write new prescaling setting */
-	TIM2->ARR = (pres + 1) / 2 - 1;
+	TIM2->ARR = (pres - 1);
 	/* apply setting */
 	TIM2->EGR = TIM_EGR_UG;
 	/* enable timer */

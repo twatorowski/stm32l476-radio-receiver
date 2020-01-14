@@ -29,10 +29,11 @@ int Await_Init(void);
  * 
  * @param ms number of milliseconds to await
  * @param cb callback to be called after the specified period of time
+ * @param arg argument to be passed to callback
  * 
  * @return void * this module does not provide callback argument so it always 
  * returns null pointer
  */
-void * Await_CallMeLater(int ms, cb_t cb);
+void * Await_CallMeLater(int ms, cb_t cb, void *arg);
 
 #endif /* DEV_AWAIT_H_ */
