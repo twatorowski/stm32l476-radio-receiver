@@ -6,6 +6,10 @@ TARGET = radio
 # linker script
 LD_SCRIPT = stm32l476rgt6.ld
 
+# ----------------------- OPTIMIZATION LEVEL ------------------------
+# use '-O0' (no optimization) for debugging or (-Os) for release
+OPT_LEVEL = -Os
+
 # -------------------------- VERSION NUMBER -------------------------
 # software version
 SW_VER_MAJOR = 0
@@ -36,19 +40,21 @@ SRC += ./at/ntfy/src/debug.c
 # device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
 SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
-SRC += ./dev/src/deci.c ./dev/src/decq.c
+SRC += ./dev/src/dec.c
 SRC += ./dev/src/analog.c ./dev/src/i2c1.c
 SRC += ./dev/src/cs43l22.c ./dev/src/rfin.c
 SRC += ./dev/src/sai1a.c ./dev/src/display.c
 SRC += ./dev/src/extimux.c ./dev/src/joystick.c
 SRC += ./dev/src/await.c ./dev/src/systime.c
+SRC += ./dev/src/timemeas.c ./dev/src/led.c
+SRC += ./dev/src/invoke.c ./dev/src/lsi.c
 
 # digital signal processing
-SRC += ./dsp/src/biquad.c ./dsp/src/float_fixp.c
+SRC += ./dsp/src/biquad.c
 
 # radio modules
-SRC += ./radio/src/mix1.c ./radio/src/decimate.c
-SRC += ./radio/src/mix2.c
+SRC += ./radio/src/mix1.c
+SRC += ./radio/src/mix2.c ./radio/src/demod_am.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
@@ -56,7 +62,8 @@ SRC += ./sys/src/sem.c
 
 # tests
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
-SRC += ./test/src/dec.c
+SRC += ./test/src/dec.c ./test/src/radio.c
+SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c
@@ -71,10 +78,6 @@ INC_DIRS = .
 LIBS = lm lc lgcc
 # library search directories (use / as path separator)
 LIB_DIRS = .
-
-# ----------------------- OPTIMIZATION LEVEL ------------------------
-# use '-O0' (no optimization) for debugging or (-Os) for release
-OPT_LEVEL = -O0
 
 # ----------------------- OUTPUT DIRECTORIES ------------------------
 # object files directory (use / as path separator)
@@ -163,7 +166,7 @@ ifeq ($(TOOLCHAIN),llvm)
     CC_FLAGS += -Wno-keyword-macro
 endif
 # warning levels
-CC_FLAGS += -g -fdata-sections -ffunction-sections
+CC_FLAGS += -g3 -fdata-sections -ffunction-sections
 CC_FLAGS += -Wall -Wno-format
 CC_FLAGS += -pedantic-errors -Wno-implicit-fallthrough
 # use defines such as M_PI from math.h

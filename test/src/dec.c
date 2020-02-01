@@ -7,10 +7,10 @@
  * @brief Test routine for the decimators
  */
 
+#include "assert.h"
 #include "compiler.h"
 #include "err.h"
-#include "dev/deci.h"
-#include "dev/decq.h"
+#include "dev/dec.h"
 #include "util/elems.h"
 
 #define DEBUG
@@ -52,35 +52,19 @@ static const int16_t ALIGNED(4) sine_lut[] = {
    -0x18f8, -0x15e1, -0x12c7, -0x0fab, -0x0c8b, -0x096a, -0x0647, -0x0324,
 };
 
-/* output results holding array */
-static int32_t output[elems(sine_lut) / DEC_DECIMATION_RATE];
-
-/* decimation complete callback*/
-static int TestDec_DecQCallback(void *ptr)
-{
-    /* show message */
-    dprintf("decimation using Q is complete\n", 0);
-    /* report status */
-    return EOK;
-}
-/* decimation complete callback*/
-static int TestDec_DecICallback(void *ptr)
-{
-    /* show message */
-    dprintf("decimation using I is complete\n", 0);
-    /* decimate with q channel */
-    DecQ_Decimate(sine_lut, elems(sine_lut), output,
-        TestDec_DecQCallback);
-    /* report status */
-    return EOK;
-}
-
 /* test the decimators */
 int TestDec_Init(void)
 {   
+    /* output results holding array */
+    float i_out[elems(sine_lut) / DEC_DECIMATION_RATE];
+    float q_out[elems(sine_lut) / DEC_DECIMATION_RATE];
+
     /* do the decimation */
-    DecI_Decimate(sine_lut, elems(sine_lut), output,
-        TestDec_DecICallback);
+    Dec_Decimate(sine_lut, sine_lut, elems(sine_lut), i_out, q_out, CB_SYNC);
+    /* compare two outputs */
+    for (int i = 0; i < elems(i_out); i++)
+        assert(i_out[i] == q_out[i], "decimated outputs differ", i);
+    
     /* report status */
     return EOK;
 }

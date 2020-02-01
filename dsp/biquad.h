@@ -39,12 +39,11 @@ void BiQuad_SetTaps(biquad_t *bq, const biquad_taps_t *taps);
 /**
  * @brief Apply Filtration using biquadratic IIR filter. Can work in-situ.
  * 
- * @param dst pointer for the output data
  * @param src data to be filtered
  * @param len length of data to be filtered
  * @param bq filter structure
- * 
+ * @param dst pointer for the output data
  */
-void BiQuad_Filter(float *dst, const float *src, int len, biquad_t *bq);
+void BiQuad_Filter(const float *src, int len, biquad_t *bq, float *dst);
 
 #endif /* DSP_BIQUAD_H */

@@ -27,8 +27,10 @@ extern ev_t analog_ev;
 
 /** @brief analog event argument */
 typedef struct {
-    /**< type of event */
-	int type;
+    /**< number of samples */
+	int num;
+    /**< samples pointer */
+    int16_t *samples;
 } analog_evarg_t;
 
 /** @name ADC Channels */

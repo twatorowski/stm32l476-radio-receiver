@@ -24,6 +24,9 @@
 #define DEBUG
 #include "debug.h"
 
+/* sai1a access semaphore */
+sem_t sai1a_sem;
+
 /* initialize sai1a interface that feeds the DAC with data */
 int SAI1A_Init(void)
 {
@@ -79,6 +82,8 @@ int SAI1A_Init(void)
 	/* enable clock output */
 	SAI1A->CR1 |= SAI_CR1_OUTDRIV;
 
+    /* release the semaphore */
+    Sem_Release(&sai1a_sem);
 	/* exit critical section */
 	Critical_Exit();
 	/* report status */

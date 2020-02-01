@@ -34,7 +34,7 @@ int RFIn_Init(void)
 	/* release reset */
 	RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_OPAMPRST;
 
-	/* set pa0 as analog input and pa3 as analog output */
+	/* set pa0 as analog input */
 	GPIOA->MODER |= GPIO_MODER_MODER0;
 	/* enable analog switch */
 	GPIOA->ASCR |= GPIO_ASCR_ASC0;

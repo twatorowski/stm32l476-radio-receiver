@@ -19,10 +19,10 @@
 /* includes with interrupt/exceptions handlers */
 #include "dev/analog.h"
 #include "dev/await.h"
-#include "dev/deci.h"
-#include "dev/decq.h"
+#include "dev/dec.h"
 #include "dev/extimux.h"
 #include "dev/i2c1.h"
+#include "dev/invoke.h"
 #include "dev/joystick.h"
 #include "dev/sai1a.h"
 #include "dev/usart2.h"
@@ -53,8 +53,7 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     SET_INT_VEC(STM32_INT_DMA1C1, Analog_DMA1C1Isr),
 
     /* decimators */
-    SET_INT_VEC(STM32_INT_DMA1C4, DecI_DMA1C4Isr),
-    SET_INT_VEC(STM32_INT_DMA1C5, DecQ_DMA1C5Isr),
+    SET_INT_VEC(STM32_INT_DMA1C4, Dec_DMA1C4Isr),
 
     /* i2c1 */
     SET_INT_VEC(STM32_INT_I2C1_EV, I2C1_I2C1EvIsr),
@@ -72,4 +71,7 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     /* extimux */
     SET_INT_VEC(STM32_INT_EXTI5_9, ExtiMux_Exti5_9Isr),
     SET_INT_VEC(STM32_INT_EXTI10_15, ExtiMux_Exti10_15Isr),
+
+    /* invoke module */
+    SET_INT_VEC(STM32_INT_FMC, Invoke_FMCIsr),
 };

@@ -128,45 +128,25 @@ static inline ALWAYS_INLINE uint32_t Arch_ReadBasepri(void)
 	return result;
 }
 
-/**
- * @brief compute the square root
- *
- * @param x number to compute the square root of
- *
- * @return square root value
- */
-static inline ALWAYS_INLINE float Arch_VSQRT(float x)
-{
-	float result;
-	/* some assembly magic */
-	__asm__ volatile (
-		"vsqrt.f32	  %0, %1\n"
-		: "=w" (result)
-		: "w" (x)
-	);
-	/* report result */
-	return result;
-}
-
-/**
- * @brief compute the absolute value of the floating point number
- *
- * @param x number to compute the absolute value of
- *
- * @return absolute value
- */
-static inline ALWAYS_INLINE float Arch_VABS(float x)
-{
-	float result;
-	/* some assembly magic */
-	__asm__ volatile (
-		"vabs.f32	 %0, %1\n"
-		: "=w" (result)
-		: "w" (x)
-	);
-	/* report result */
-	return result;
-}
+// /**
+//  * @brief compute the absolute value of the floating point number
+//  *
+//  * @param x number to compute the absolute value of
+//  *
+//  * @return absolute value
+//  */
+// static inline ALWAYS_INLINE float Arch_VABS(float x)
+// {
+// 	float result;
+// 	/* some assembly magic */
+// 	__asm__ volatile (
+// 		"vabs.f32	 %0, %1\n"
+// 		: "=w" (result)
+// 		: "w" (x)
+// 	);
+// 	/* report result */
+// 	return result;
+// }
 
 /**
  * @brief Returns the value of the stack pointer
@@ -204,6 +184,29 @@ static inline ALWAYS_INLINE uint32_t Arch_ReadIPSR(void)
 		:
 	);
 
+	/* report result */
+	return result;
+}
+
+/**
+ * @brief signed saturate the 'x' to be representable in 'bit' bits wide 
+ * signed word
+ * 
+ * @param x value
+ * @param bit number of bits that the x value shall be contained within
+ * 
+ * @return uint32_t signed-saturated version of the word
+ */
+static inline ALWAYS_INLINE int32_t Arch_SSAT(int32_t x, const uint32_t bit)
+{
+	/* result */
+	uint32_t result;
+	/* some assembly magic */
+	ASM volatile (
+		"ssat	   %[result], %[bit], %[x]		\n"
+		: [result] "=r" (result)
+		: [bit] "M" (bit), [x] "r" (x)
+	);
 	/* report result */
 	return result;
 }

@@ -21,14 +21,14 @@
 
 /* cosine look-up table, 64 samples, full scale  */
 static const int16_t cos_lut[] = {
-    +0x7fff, +0x7f61, +0x7d89, +0x7a7c, +0x7640, +0x70e1, +0x6a6c, +0x62f1,
-    +0x5a81, +0x5133, +0x471c, +0x3c56, +0x30fb, +0x2527, +0x18f8, +0x0c8b,
-    +0x0000, -0x0c8b, -0x18f8, -0x2527, -0x30fb, -0x3c56, -0x471c, -0x5133,
-    -0x5a81, -0x62f1, -0x6a6c, -0x70e1, -0x7640, -0x7a7c, -0x7d89, -0x7f61,
-    -0x7fff, -0x7f61, -0x7d89, -0x7a7c, -0x7640, -0x70e1, -0x6a6c, -0x62f1,
-    -0x5a81, -0x5133, -0x471c, -0x3c56, -0x30fb, -0x2527, -0x18f8, -0x0c8b,
-    +0x0000, +0x0c8b, +0x18f8, +0x2527, +0x30fb, +0x3c56, +0x471c, +0x5133,
-    +0x5a81, +0x62f1, +0x6a6c, +0x70e1, +0x7640, +0x7a7c, +0x7d89, +0x7f61,
+    +0x7fff, +0x7f61, +0x7d89, +0x7a7c, +0x7641, +0x70e2, +0x6a6d, +0x62f1,
+    +0x5a82, +0x5133, +0x471c, +0x3c56, +0x30fb, +0x2528, +0x18f9, +0x0c8c,
+    +0x0000, -0x0c8c, -0x18f9, -0x2528, -0x30fb, -0x3c56, -0x471c, -0x5133,
+    -0x5a82, -0x62f1, -0x6a6d, -0x70e2, -0x7641, -0x7a7c, -0x7d89, -0x7f61,
+    -0x7fff, -0x7f61, -0x7d89, -0x7a7c, -0x7641, -0x70e2, -0x6a6d, -0x62f1,
+    -0x5a82, -0x5133, -0x471c, -0x3c56, -0x30fb, -0x2528, -0x18f9, -0x0c8c,
+    +0x0000, +0x0c8c, +0x18f9, +0x2528, +0x30fb, +0x3c56, +0x471c, +0x5133,
+    +0x5a82, +0x62f1, +0x6a6d, +0x70e2, +0x7641, +0x7a7c, +0x7d89, +0x7f61,
 };
 
 /* 1st local oscillator look-up table (subsampled sine lut values) */
@@ -52,7 +52,7 @@ static void LOOP_UNROLL OPTIMIZE("O3") Mix1_Iter(const int16_t *rf, int16_t *i,
 void Mix1_Mix(const int16_t *rf, int num, int16_t *i, int16_t *q)
 {
     /* assert on the number of elements */
-    assert(num % 64 == elems(i_lut), 
+    assert(num % elems(i_lut) == 0, 
         "number of samples not divisible by lut length", num);
     /* mix with local oscillator */
     for (int cnt = 0; cnt < num; cnt += elems(i_lut))
@@ -63,21 +63,21 @@ void Mix1_Mix(const int16_t *rf, int num, int16_t *i, int16_t *q)
 int Mix1_SetLOFrequency(int hz)
 {
     /* get the actual band that we are about to select for the 1st lo */
-    int band = (elems(cos_lut) * hz + (RF_SAMPLING_FREQ / 2)) / 
+    int band = ((int)elems(cos_lut) * hz + (RF_SAMPLING_FREQ / 2)) / 
         RF_SAMPLING_FREQ;
     
     /* sanity check */
-    assert(band > 0 && band <= elems(cos_lut) / 2, 
+    assert(band >= 0 && band <= elems(cos_lut) / 2, 
         "unsupported band for mix1", band);
 
     /* setup luts for in-phase and quadrature components. 
      * in-phase = cos(band * t), quadrature = -sin(band * t) */
     for (int i = 0; i < elems(cos_lut); i++) {
-        i_lut[i] = cos_lut[(i * band) % elems(cos_lut)];
-        q_lut[i] = cos_lut[(elems(cos_lut) / 4 + i * band) % elems(cos_lut)];
+        i_lut[i] = cos_lut[(i * band) & (elems(cos_lut) - 1)];
+        q_lut[i] = cos_lut[(elems(cos_lut) / 4 + i * band) & (elems(cos_lut) - 1)];
     }
     /* store current band */
     curr_band = band;
     /* return the actual frequency */
-    return band * RF_SAMPLING_FREQ /elems(cos_lut);
+    return band * RF_SAMPLING_FREQ / (int)elems(cos_lut);
 }

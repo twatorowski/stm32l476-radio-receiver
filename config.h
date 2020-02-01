@@ -87,12 +87,14 @@
 #define INT_PRI_EXI5_9                              0xf0
 /** @brief exti multiplexer interrupt priority for exti[10-15] */
 #define INT_PRI_EXI10_15                            0xf0
+/** @brief invoke interrupt priority */
+#define INT_PRI_INVOKE                              0xf0
 /** @} */
 
 /** @name USART2 configuration */
 /** @{ */
 /** @brief usart baudrate */
-#define USART2_BAUD_RATE                            230400
+#define USART2_BAUD_RATE                            2000000
 /** @} */
 
 /** @name IQ Decimators */

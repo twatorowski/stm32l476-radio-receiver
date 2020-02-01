@@ -14,6 +14,11 @@
 
 #include <stdint.h>
 
+#include "sys/sem.h"
+
+/* sai1a access semaphore */
+extern sem_t sai1a_sem;
+
 /**
  * @brief Initialize SAI1A Audio Interface.
  * 

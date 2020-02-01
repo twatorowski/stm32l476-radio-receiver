@@ -13,26 +13,30 @@
 #include "dev/await.h"
 #include "dev/cpuclock.h"
 #include "dev/cs43l22.h"
-#include "dev/deci.h"
-#include "dev/decq.h"
+#include "dev/dec.h"
 #include "dev/display.h"
 #include "dev/extimux.h"
 #include "dev/fpu.h"
 #include "dev/i2c1.h"
+#include "dev/invoke.h"
 #include "dev/joystick.h"
+#include "dev/led.h"
+#include "dev/lsi.h"
 #include "dev/rfin.h"
 #include "dev/sai1a.h"
 #include "dev/systime.h"
+#include "dev/timemeas.h"
 #include "dev/usart2.h"
 #include "dev/watchdog.h"
+#include "test/am_radio.h"
 #include "test/dac_sine.h"
 #include "test/dec.h"
+#include "test/float_fixp.h"
+#include "test/radio.h"
 #include "test/usart2.h"
 
 #define DEBUG
 #include "debug.h"
-
-#include "sys/time.h"
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -50,6 +54,8 @@ void Main(void)
 
     /* setup the cpu frequency */
     CpuClock_Init();
+    /* initialize low speed oscillator */
+    LSI_Init();
     /* start systime */
 	SysTime_Init();
 
@@ -57,6 +63,10 @@ void Main(void)
     Debug_Init();
 
     /* internals */
+    /* invoke module */
+    Invoke_Init();
+    /* time measurement */
+    TimeMeas_Init();
     /* exti mux */
     ExtiMux_Init();
     /* async awaiter */
@@ -65,10 +75,8 @@ void Main(void)
     USART2_Init();
     /* intiialize adc sampler module */
     Analog_Init();
-    /* initialize decimator for the in-phase channel */
-    DecI_Init();
-    /* initialize decimator for the quadrature channel */
-    DecQ_Init();
+    /* initialize decimator for the rf data */
+    Dec_Init();
     /* initialize i2c1 */
 	I2C1_Init();
 	/* initialize sai1a interface */
@@ -77,10 +85,16 @@ void Main(void)
     RFIn_Init();
 
     /* externals */
+    /* led */
+    Led_Init();
     /* lcd display */
     Display_Init();
+    Display_SetCharacter(0, 'A');
+    Display_SetCharacter(1, 'B');
+    Display_SetCharacter(2, 'C');
+    Display_Update();
     /* joystick */
-    Joystick_Init();
+    // Joystick_Init();
     /* bring up the dac */
     CS43L22_Init();
 
@@ -95,19 +109,16 @@ void Main(void)
     // TestDACSine_Init();
     /* initialize decimators test */
     // TestDec_Init();
+    /* test radio */
+    // TestRadio_Init();
+    // TestAMRadio_Init();
+    
 
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
 		AT_Poll();
-        
-        /* tests */
-        /* poll usart2 test */
-        // TestUSART2_Poll();
-        /* poll dac test */
-        // TestDACSine_Poll();
-        /* poll the decimators test */
-        // TestDec_Poll();
+
 
         /* kick the dog counter */
         Watchdog_Kick();

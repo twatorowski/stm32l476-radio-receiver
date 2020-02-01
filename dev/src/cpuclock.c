@@ -30,8 +30,9 @@ int CpuClock_Init(void)
 
 	/* configure pll, REF = HSE (8MHz) / 1 (M) = 8MHz, VCO = REF * N =
 	 * 8MHz * 20 = 160MHz, OUT = VCO / R = 160MHz / 2 = 80MHz */
-	RCC->PLLCFGR = RCC_PLLCFGR_PLLSRC_HSE | 40 << LSB(RCC_PLLCFGR_PLLN) | 
-        0 << LSB(RCC_PLLCFGR_PLLM) | RCC_PLLCFGR_PLLREN;
+	RCC->PLLCFGR = RCC_PLLCFGR_PLLSRC_HSE | 20 << LSB(RCC_PLLCFGR_PLLN) | 
+        0 << LSB(RCC_PLLCFGR_PLLM) | 0 << LSB(RCC_PLLCFGR_PLLR) | 
+        RCC_PLLCFGR_PLLREN;
 	/* enable pll */
 	RCC->CR |= RCC_CR_PLLON;
 	/* wait till its enabled */

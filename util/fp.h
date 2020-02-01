@@ -14,7 +14,7 @@
 #include <math.h>
 #include <float.h>
 
-#include "arch/arch.h"
+#include "arch/arch_fpu.h"
 
 
 #ifndef __FLT_EPSILON__

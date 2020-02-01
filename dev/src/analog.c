@@ -17,25 +17,39 @@
 #include "stm32l476/dma.h"
 #include "stm32l476/adc.h"
 #include "stm32l476/timer.h"
+#include "stm32l476/gpio.h"
 #include "sys/critical.h"
 #include "sys/ev.h"
+#include "util/msblsb.h"
 
-/* event */
+/* system event */
 ev_t analog_ev;
+/* data pointer, */
+static int16_t *samples;
+/* data buffer size in number of samples */
+static int samples_num;
 
 /* adc dma1 interrupt */
 void Analog_DMA1C1Isr(void)
 {
-	/* build up event argument */
-	analog_evarg_t ea = { ANALOG_TYPE_HT };
+    /* event argument */
+	analog_evarg_t ea = { .num = samples_num / 2, .samples = samples };
 	/* get interrupt flags */
 	uint32_t isr = DMA1->ISR & (DMA_ISR_TCIF1 | DMA_ISR_HTIF1);
 	/* clear interrupt */
 	DMA1->IFCR = isr;
 
 	/* full transfer occured? */
-	if (isr & DMA_ISR_TCIF1)
-		ea.type = ANALOG_TYPE_FT;
+	if (isr & DMA_ISR_TCIF1) 
+		ea.samples = &samples[samples_num / 2];
+    
+    /* bring to the middle value */
+    for (int i = 0; i < ea.num; i += 4) {
+        ea.samples[i + 0] -= 2048;
+        ea.samples[i + 1] -= 2048;
+        ea.samples[i + 2] -= 2048;
+        ea.samples[i + 3] -= 2048;
+    }
 
 	/* notify others */
 	Ev_Notify(&analog_ev, &ea);
@@ -49,7 +63,7 @@ int Analog_Init(void)
 	/* enable dma */
 	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
 	/* enable adc */
-	RCC->AHB2ENR |= RCC_AHB2ENR_ADCEN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_ADCEN | RCC_AHB2ENR_GPIOAEN;
 	/* enable timer */
 	RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
 
@@ -72,6 +86,15 @@ int Analog_Init(void)
 	TIM2->CR1 = TIM_CR1_URS;
 	/* apply prescaler setting */
 	TIM2->EGR = TIM_EGR_UG;
+
+    // TIM2->ARR = 79;
+    // TIM2->CCR1 = 70;
+    // TIM2->CCMR1 = TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
+    // TIM2->CCER = TIM_CCER_CC1E;
+    // GPIOA->MODER &= ~GPIO_MODER_MODER0; 
+    // GPIOA->AFRL |= 1 << 0;
+    // GPIOA->MODER |= GPIO_MODER_MODER0_1;
+    // GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR0;
 
 	/* select dma channel */
 	DMA1->CSELR = (DMA1->CSELR & ~DMA_CSELR_C1S) | DMA1_CSELR_C1S_ADC1;
@@ -101,15 +124,16 @@ int Analog_Init(void)
 	/* loop until it is finished */
 	while (ADC1->CR & ADC_CR_ADCAL);
 
-	/* set sampling: pa3 - ch5 - 2.5 adc cycles */
-	ADC1->SMPR1 = (ADC1->SMPR1 & ~ADC_SMPR1_SMP5) | ADC_SMPR1_SMP5_2CLK5;
+	/* set sampling: pa0 - ch5 - 2.5 adc cycles */
+	ADC1->SMPR1 = (ADC1->SMPR1 & ~ADC_SMPR1_SMP5) | ADC_SMPR1_SMP5_6CLK5;
 	/* set configuration: overrun stop disabled, rising edge external trigger
 	 * detection, select tim2 trgo as external trigger, enable dma in circular
 	 * mode */
 	ADC1->CFGR = ADC_CFGR_OVRMOD | ADC_CFGR_EXTSEL_TIM2_TRGO | ADC_CFGR_DMAEN |
 			ADC_CFGR_EXTEN_RE | ADC_CFGR_DMACFG;
-	/* enable oversampling: 2x */
-	ADC1->CFGR2 = ADC_CFGR2_TROVS | ADC_CFGR2_ROVSE;
+	/* enable oversampling: 4x, shift by 2 bit */
+	ADC1->CFGR2 = ADC_CFGR2_TROVS | 2 << LSB(ADC_CFGR2_OVSS) | 
+        1 << LSB(ADC_CFGR2_OVSR) | ADC_CFGR2_ROVSE;
 
 	/* clear ready flag */
 	ADC1->ISR = ADC_ISR_ADRDY;
@@ -140,7 +164,7 @@ void Analog_StartSampling(int channel, int pres, int16_t *ptr, int num)
 	/* disable timer */
 	TIM2->CR1 &= ~TIM_CR1_CEN;
 	/* write new prescaling setting */
-	TIM2->ARR = (pres - 1);
+	TIM2->ARR = (pres / 4) - 1;
 	/* apply setting */
 	TIM2->EGR = TIM_EGR_UG;
 	/* enable timer */
@@ -149,9 +173,9 @@ void Analog_StartSampling(int channel, int pres, int16_t *ptr, int num)
 	/* start dma */
 	DMA1C1->CCR &= ~DMA_CCR_EN;
 	/* set destination buffer address */
-	DMA1C1->CMAR = (uint32_t)ptr;
-	/* set buffer size (expressed in number of samples */
-	DMA1C1->CNDTR = num;
+	DMA1C1->CMAR = (uint32_t)(samples = ptr);
+	/* set buffer size (expressed in number of samples) */
+	DMA1C1->CNDTR = (samples_num = num);
 	/* start dma */
 	DMA1C1->CCR |= DMA_CCR_EN;
 

@@ -54,6 +54,29 @@ static inline ALWAYS_INLINE float Arch_VABS(float x)
 }
 
 /**
+ * @brief convert the floating point to signed 32-bit fixed point notation. For 
+ * numbers that exceed the fixed point notation boundaries saturation is used.
+ *
+ * @param x floating point number to convert
+ * @param frac_bits number of fractional bits
+ *
+ * @return signed fixed point number
+ */
+static inline ALWAYS_INLINE int32_t Arch_VCVT_S32_F32(float x, 
+    const int frac_bits)
+{
+	int32_t result;
+	/* some assembly magic */
+	ASM volatile (
+		"vcvt.s32.f32	 %[result], %[x], %[frac_bits]\n"
+		: [result] "=w" (result)
+		: [x] "%[result]" (x), [frac_bits] "M" (frac_bits)
+	);
+	/* report result */
+	return result;
+}
+
+/**
  * @brief convert the floating point to signed 16-bit fixed point notation. For 
  * numbers that exceed the fixed point notation boundaries saturation is used.
  *
@@ -62,29 +85,59 @@ static inline ALWAYS_INLINE float Arch_VABS(float x)
  *
  * @return signed fixed point number
  */
-static inline ALWAYS_INLINE int32_t Arch_VCVT_S16_F32(float x, 
+static inline ALWAYS_INLINE int16_t Arch_VCVT_S16_F32(float x, 
     const int frac_bits)
 {
-	int32_t result;
+	int16_t result;
 	/* some assembly magic */
 	ASM volatile (
-		"vcvt.s16.f32	 %[x], %[x], %[frac_bits]\n"
+		"vcvt.s16.f32	 %[result], %[x], %[frac_bits]\n"
 		: [result] "=w" (result)
-		: [frac_bits] "M" (frac_bits), [x] "w" (x)
+		: [x] "%[result]" (x), [frac_bits] "M" (frac_bits)
 	);
 	/* report result */
 	return result;
 }
 
-inline ALWAYS_INLINE int32_t Arch_VCVT_F32_S32(float x, 
+/**
+ * @brief Convert signed 32-bit fixed point notation number to floating point.
+ * 
+ * @param x input value in SQx.y format
+ * @param frac_bits number of fractional bits ('y' in SQx.y)
+ * 
+ * @return converted number in a floating point representation 
+ */
+static inline ALWAYS_INLINE float Arch_VCVT_F32_S32(int32_t x, 
     const int frac_bits)
 {
-	int32_t result;
+	float result;
 	/* some assembly magic */
 	ASM volatile (
-		"vcvt.f32.s32	 %[x], %[x], %[frac_bits]\n"
+		"vcvt.f32.s32	 %[result], %[x], %[frac_bits] \n"
 		: [result] "=w" (result)
-		: [frac_bits] "M" (frac_bits), [x] "w" (x)
+		: [x] "%[result]" (x), [frac_bits] "M" (frac_bits)
+	);
+	/* report result */
+	return result;
+}
+
+/**
+ * @brief Convert signed 16-bit fixed point notation number to floating point.
+ * 
+ * @param x input value in SQx.y format
+ * @param frac_bits number of fractional bits ('y' in SQx.y)
+ * 
+ * @return converted number in a floating point representation 
+ */
+static inline ALWAYS_INLINE float Arch_VCVT_F32_S16(int16_t x, 
+    const int frac_bits)
+{
+	float result;
+	/* some assembly magic */
+	ASM volatile (
+		"vcvt.f32.s16	 %[result], %[x], %[frac_bits] \n"
+		: [result] "=w" (result)
+		: [x] "%[result]" (x), [frac_bits] "M" (frac_bits)
 	);
 	/* report result */
 	return result;
