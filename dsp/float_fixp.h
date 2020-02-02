@@ -4,7 +4,7 @@
  * @date 2020-01-14
  * @author twatorowski 
  * 
- * @brief 
+ * @brief Conversions beteween floating point and fixed point number arrays
  */
 
 #ifndef FLOAT_FIXP_H
@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 
+#include "compiler.h"
 #include "arch/arch_fpu.h"
 
 /**

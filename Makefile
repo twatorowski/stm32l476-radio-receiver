@@ -55,6 +55,7 @@ SRC += ./dsp/src/biquad.c
 # radio modules
 SRC += ./radio/src/mix1.c
 SRC += ./radio/src/mix2.c ./radio/src/demod_am.c
+SRC += ./radio/src/radio.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
@@ -64,6 +65,7 @@ SRC += ./sys/src/sem.c
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
+SRC += ./test/src/dynamic_int.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c
@@ -166,7 +168,7 @@ ifeq ($(TOOLCHAIN),llvm)
     CC_FLAGS += -Wno-keyword-macro
 endif
 # warning levels
-CC_FLAGS += -g3 -fdata-sections -ffunction-sections
+CC_FLAGS += -g3 -ggdb -fdata-sections -ffunction-sections
 CC_FLAGS += -Wall -Wno-format
 CC_FLAGS += -pedantic-errors -Wno-implicit-fallthrough
 # use defines such as M_PI from math.h

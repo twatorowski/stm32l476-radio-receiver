@@ -113,12 +113,12 @@ static inline ALWAYS_INLINE void Arch_WriteBasepri(uint32_t x)
  *
  * @return value that was in the BASEPRI register.
  */
-static inline ALWAYS_INLINE uint32_t Arch_ReadBasepri(void)
+static inline ALWAYS_INLINE uint32_t Arch_ReadBASEPRI(void)
 {
 	/* result */
 	uint32_t result;
 	/* assembly code */
-	__asm__ volatile (
+	ASM volatile (
 		"mrs %[result], basepri	\n"
 		: [result] "=r" (result)
 		:
@@ -128,25 +128,25 @@ static inline ALWAYS_INLINE uint32_t Arch_ReadBasepri(void)
 	return result;
 }
 
-// /**
-//  * @brief compute the absolute value of the floating point number
-//  *
-//  * @param x number to compute the absolute value of
-//  *
-//  * @return absolute value
-//  */
-// static inline ALWAYS_INLINE float Arch_VABS(float x)
-// {
-// 	float result;
-// 	/* some assembly magic */
-// 	__asm__ volatile (
-// 		"vabs.f32	 %0, %1\n"
-// 		: "=w" (result)
-// 		: "w" (x)
-// 	);
-// 	/* report result */
-// 	return result;
-// }
+/**
+ * @brief read the PRIMASK register value.
+ *
+ * @return value that was in the PRIMASK register.
+ */
+static inline ALWAYS_INLINE uint32_t Arch_ReadPRIMASK(void)
+{
+	/* result */
+	uint32_t result;
+	/* assembly code */
+	ASM volatile (
+		"mrs %[result], primask	\n"
+		: [result] "=r" (result)
+		:
+	);
+
+	/* report result */
+	return result;
+}
 
 /**
  * @brief Returns the value of the stack pointer
@@ -158,9 +158,9 @@ static inline ALWAYS_INLINE void * Arch_ReadMSP(void)
 	/* result */
 	void * result;
 	/* some assembly magic */
-	__asm__ volatile (
-		"mrs		%0, msp			\n"
-		: "=r" (result)
+	ASM volatile (
+		"mrs		%[result], msp			\n"
+		: [result] "=r" (result)
 		:
 	);
 
@@ -178,9 +178,9 @@ static inline ALWAYS_INLINE uint32_t Arch_ReadIPSR(void)
 	/* result */
 	uint32_t result;
 	/* some assembly magic */
-	__asm__ volatile (
-		"mrs		%0, ipsr		\n"
-		: "=r" (result)
+	ASM volatile (
+		"mrs		%[result], ipsr		\n"
+		: [result] "=r" (result)
 		:
 	);
 
@@ -193,11 +193,12 @@ static inline ALWAYS_INLINE uint32_t Arch_ReadIPSR(void)
  * signed word
  * 
  * @param x value
- * @param bit number of bits that the x value shall be contained within
+ * @param bit number of bits that the x value shall be contained within, needs 
+ * to be a compile time constant
  * 
  * @return uint32_t signed-saturated version of the word
  */
-static inline ALWAYS_INLINE int32_t Arch_SSAT(int32_t x, const uint32_t bit)
+static inline ALWAYS_INLINE int32_t Arch_SSAT(int32_t x, const int bit)
 {
 	/* result */
 	uint32_t result;

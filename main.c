@@ -28,15 +28,18 @@
 #include "dev/timemeas.h"
 #include "dev/usart2.h"
 #include "dev/watchdog.h"
+#include "radio/radio.h"
 #include "test/am_radio.h"
 #include "test/dac_sine.h"
 #include "test/dec.h"
+#include "test/dynamic_int.h"
 #include "test/float_fixp.h"
 #include "test/radio.h"
 #include "test/usart2.h"
 
 #define DEBUG
 #include "debug.h"
+
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -89,18 +92,23 @@ void Main(void)
     Led_Init();
     /* lcd display */
     Display_Init();
-    Display_SetCharacter(0, 'A');
-    Display_SetCharacter(1, 'B');
-    Display_SetCharacter(2, 'C');
-    Display_Update();
     /* joystick */
-    // Joystick_Init();
+    Joystick_Init();
     /* bring up the dac */
     CS43L22_Init();
 
 
     /* at commands protocol */
     AT_Init();
+
+    /* initialize the radio receiver logic */
+    Radio_Init();
+
+    volatile int32_t _x = 0;
+    int bits = 24;
+    int32_t x = _x, saturation = (1 << (bits - 1));
+
+    _x = x < -saturation ? -saturation : (x >= saturation ? saturation - 1 : x);
 
     /* tests */
     /* initialize usart2 test */
@@ -112,6 +120,8 @@ void Main(void)
     /* test radio */
     // TestRadio_Init();
     // TestAMRadio_Init();
+    /* test dynamic interrupt levels */
+    // TestDynInt_Init();
     
 
 	/* execution loop */

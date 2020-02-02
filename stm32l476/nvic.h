@@ -54,4 +54,8 @@ typedef struct {
 #define NVIC_SETINTPRI(i, p)				\
 	(NVIC->IP[i] = (p))
 
+/* get interrupt priority */
+#define NVIC_GETINTPRI(i)				    \
+	(NVIC->IP[i])
+
 #endif /* STM32L476_NVIC_H_ */

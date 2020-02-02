@@ -23,8 +23,6 @@
 #define JOYSTICK_STATUS_UP                  (1 << 2)
 /** @brief joystick moved down */
 #define JOYSTICK_STATUS_DOWN                (1 << 3)
-/** @brief joystick center button pressed */
-#define JOYSTICK_STATUS_CENTER              (1 << 4)
 /** @} */
 
 /** @brief joystick event */

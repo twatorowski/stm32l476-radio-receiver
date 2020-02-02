@@ -88,7 +88,7 @@
 /** @brief exti multiplexer interrupt priority for exti[10-15] */
 #define INT_PRI_EXI10_15                            0xf0
 /** @brief invoke interrupt priority */
-#define INT_PRI_INVOKE                              0xf0
+#define INT_PRI_INVOKE                              0x50
 /** @} */
 
 /** @name USART2 configuration */

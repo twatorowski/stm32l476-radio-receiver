@@ -122,4 +122,8 @@ typedef struct {
 #define SCB_SETEXCPRI(e, p)					\
 	(SCB->SHPR[(e) - 4] = (p))
 
+/* get exception priority */
+#define SCB_GETEXCPRI(e)					\
+	(SCB->SHPR[(e) - 4])
+
 #endif /* STM32L476_SCB_H_ */
