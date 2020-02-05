@@ -25,6 +25,7 @@
 #define JOYSTICK_STATUS_DOWN                (1 << 3)
 /** @} */
 
+
 /** @brief joystick event */
 typedef struct joystick_evarg {
     /** @brief current joystick status */

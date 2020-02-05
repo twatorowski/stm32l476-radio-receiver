@@ -21,6 +21,7 @@
 /* all the command providers go here */
 #include "at/cmd/gen.h"
 #include "at/cmd/bl.h"
+#include "at/cmd/radio.h"
 
 /* last used interface for commands that generate responses in later time */
 static int last_iface;
@@ -29,6 +30,7 @@ static int last_iface;
 static const at_cmd_t *cmd_lists[] = {
     at_cmd_gen_list,
     at_cmd_bl_list,
+    at_cmd_radio_list,
 };
 
 /* returns true if character is a whitespace (0xff is a special case for uart
@@ -90,6 +92,7 @@ int ATCmd_Init(void)
     /* initialize all the commands submodules */
     rc |= ATCmdGen_Init();
     rc |= ATCmdBootLoader_Init();
+    rc |= ATCmdRadio_Init();
 
 	/* report status */
 	return EOK;
@@ -102,6 +105,7 @@ void ATCmd_Poll(void)
     /* general commands */
     ATCmdGen_Poll();
     ATCmdBootloader_Poll();
+    ATCmdRadio_Poll();
 }
 
 /* parser input */

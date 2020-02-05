@@ -32,12 +32,12 @@
 #include "debug.h"
 
 /* frequencies */
-static int set_frequency = 480000, actual_frequency;
+static int set_frequency = 225000, actual_frequency;
 /* frequencies of the local oscillator */
-static int lo1_frequency, lo2_frequency;
+static float lo1_frequency, lo2_frequency;
 
 /* rf samples buffer */
-static int16_t rf[1024];
+static int16_t rf[2048];
 /* complex data after 1st stage mixing */
 static int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
 /* complex data after downsampling: in-phase channel, and quadrature channel */
@@ -71,22 +71,25 @@ static int Radio_UpdateFrequencyCallback(void *ptr)
 
     /* set the frequencies for the local oscillators */
     lo1_frequency = Mix1_SetLOFrequency(set_frequency);
-    lo2_frequency = Mix2_SetLOFrequency(lo1_frequency - set_frequency);
+    lo2_frequency = Mix2_SetLOFrequency(set_frequency - lo1_frequency);
 
     /* calculate the actual frequency */
-    actual_frequency = lo1_frequency - lo2_frequency;
+    actual_frequency = lo1_frequency + lo2_frequency;
     /* show the frequency */
-    dprintf("set_frequency = %d, act_frequency = %d, lo1 = %d, lo2 = %d\n", 
+    dprintf("set_frequency = %d, act_frequency = %d, lo1 = %.5e, lo2 = %.5e\n", 
         set_frequency, actual_frequency, lo1_frequency, lo2_frequency);
     /* show the gain */
     dprintf("gain = %e\n", set_gain);
     
     /* prepare the display content */
-    int len = snprintf(display_buf, sizeof(display_buf), "%d", 
+    int i, len = snprintf(display_buf, sizeof(display_buf), "%d", 
         actual_frequency);
     /* store the data in the display memory */
-    for (int i = 0 ; i < len; i++)
+    for (i = 0 ; i < len; i++)
         Display_SetCharacter(i, display_buf[i]);
+    /* fill the rest with spaces */
+    for (; i < 6; i++)
+        Display_SetCharacter(i, ' ');
     /* update the display */
     Display_Update();
 
@@ -166,14 +169,17 @@ static int Radio_DecimationCallback(void *ptr)
 {
     /* cast event argument */
     dec_cbarg_t *ca = ptr;
+
+    /* set the led off to indicate the end of processing */
+    Led_SetState(1, LED_RED);
     
     /* 2nd stage mixing, done in-situ */
     Mix2_Mix(ca->i, ca->q, ca->num, ca->i, ca->q);
 
     /* filter before demodulation */
-    DemodAM_Filter(i_dec, q_dec, ca->num, i_dec, q_dec);
+    DemodAM_Filter(ca->i, ca->q, ca->num, ca->i, ca->q);
     /* demodulate the output data */
-    DemodAM_Demodulate(i_dec, q_dec, ca->num, dem);
+    DemodAM_Demodulate(ca->i, ca->q, ca->num, dem);
 
     /* apply gain */
     FloatScale_Scale(dem, ca->num, set_gain, dem);
@@ -192,7 +198,8 @@ static int Radio_DecimationCallback(void *ptr)
      * being sent to dac */
     if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
         /* start streaming data */
-        SAI1A_StartStreaming(dac, elems(dac));
+        SAI1A_StartStreaming((float)RF_SAMPLING_FREQ / DEC_DECIMATION_RATE, 
+            dac, elems(dac));
         /* start the dac enable procedure 100 ms after the stream was started 
          * to avoid audio glitches */
         Await_CallMeLater(100, Radio_DACEnableCallback, 0);
@@ -200,7 +207,7 @@ static int Radio_DecimationCallback(void *ptr)
 
     /* set the led off to indicate the end of processing */
     Led_SetState(0, LED_RED);
-    /* release the semaphore */
+    /* TODO: release the semaphore */
     Sem_Release(&sem);
 
     /* report status */
@@ -212,18 +219,27 @@ static int Radio_AnalogCallback(void *ptr)
 {
     /* cast event argument */
     analog_evarg_t *ea = ptr;
-    /* check if calls do not overlap */
-    assert(Sem_Lock(&sem, CB_NONE) == EOK, 
-        "rf samples overflown the signal path", 0);
+
+    //TODO:
+    // /* check if calls do not overlap */
+    // assert(Sem_Lock(&sem, CB_NONE) == EOK, 
+    //     "rf samples overflown the signal path", 0);
+
+    /* do not proceed with the processing when we are not done with previous 
+     * frame */
+    if (Sem_Lock(&sem, CB_NONE) != EOK)
+        return EOK;
     
     /* set the led on to indicate the start of the processing */
     Led_SetState(1, LED_RED);
-    
     /* do the mixing */
     Mix1_Mix(ea->samples, ea->num, i_mix1, q_mix1);
+    /* set the led off to indicate the end of processing */
+    Led_SetState(0, LED_RED);   
     /* decimate data */
     Dec_Decimate(i_mix1, q_mix1, ea->num, i_dec, q_dec, 
         Radio_DecimationCallback);
+    
     
     /* report status */
     return EOK;
@@ -232,6 +248,11 @@ static int Radio_AnalogCallback(void *ptr)
 /* initialize radio receiver logic */
 int Radio_Init(void)
 {   
+    /* sanity check */
+    assert(((int)CPUCLOCK_FREQ / (int)RF_SAMPLING_FREQ) * RF_SAMPLING_FREQ == 
+        CPUCLOCK_FREQ, "cpu clock frequency is not a multiple of the sampling "
+        "frequency!", 0);
+
     /* subscribe to rf data ready notifications. the callback will be called 
      * every time a half of the buffer gets filled */
     Ev_RegisterCallback(&analog_ev, Radio_AnalogCallback);
@@ -244,6 +265,31 @@ int Radio_Init(void)
 
     /* initialize the local oscillators */
     Invoke_CallMeElsewhere(Radio_UpdateFrequencyCallback, 0);
+    /* report status */
+    return EOK;
+}
+
+/* tune to given frequency */
+int Radio_SetFrequency(float f)
+{
+    /* rsanity checks */
+    if (f < 0 || f > RF_SAMPLING_FREQ / 2)
+        return EFATAL;
+
+    /* set the frequency */
+    set_frequency = f;
+    /* initialize the local oscillators */
+    Invoke_CallMeElsewhere(Radio_UpdateFrequencyCallback, 0);
+
+    /* report status */
+    return EOK;
+}
+
+/* get current frequency */
+int Radio_GetFrequency(float *f)
+{
+    /*report the actual frequency */
+    *f = actual_frequency;
     /* report status */
     return EOK;
 }

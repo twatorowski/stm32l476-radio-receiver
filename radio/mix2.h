@@ -33,6 +33,6 @@ void Mix2_Mix(const float *i, const float *q, int num, float *i_out,
  * 
  * @return int actual frequency
  */
-int Mix2_SetLOFrequency(int hz);
+float Mix2_SetLOFrequency(float hz);
 
 #endif /* RADIO_MIX2_H */

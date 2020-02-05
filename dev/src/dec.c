@@ -111,7 +111,7 @@ int Dec_Init(void)
 	/* configure for parallel data input */
 	DFSDMC0->CHCFGR1 |= DFSDM_CHCFGR1_DATMPX_1 | DFSDM_CHCFGR1_DATPACK_0;
 	/* configure offset and bit shift  */
-	DFSDMC0->CHCFGR2 |= 3 << LSB(DFSDM_CHCFGR2_DTRBS);
+	DFSDMC0->CHCFGR2 |= 8 << LSB(DFSDM_CHCFGR2_DTRBS);
 	/* enable channel */
 	DFSDMC0->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
 
@@ -119,20 +119,20 @@ int Dec_Init(void)
 	/* configure for parallel data input */
 	DFSDMC1->CHCFGR1 |= DFSDM_CHCFGR1_DATMPX_1 | DFSDM_CHCFGR1_DATPACK_0;
 	/* configure offset and bit shift  */
-	DFSDMC1->CHCFGR2 |= 3 << LSB(DFSDM_CHCFGR2_DTRBS);
+	DFSDMC1->CHCFGR2 |= 8 << LSB(DFSDM_CHCFGR2_DTRBS);
 	/* enable channel */
 	DFSDMC1->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
 
-	/* 0th Filter: mapped to channel 0 (I samples), decimation by 32, sinc^4
-	 * filter, bit growth = N*log2(R) = 3 * log2(32) = 15, output data width =
-	 * input data width + bit growth = 12b + 15b = 27b, but since the output
-	 * register can only handle 24 bit data we need to shift by 3 (done in
+	/* 0th Filter: mapped to channel 0 (I samples), decimation by 64, sinc^4
+	 * filter, bit growth = N*log2(R) = 3 * log2(64) = 18, output data width =
+	 * input data width + bit growth = 14b + 18b = 32b, but since the output
+	 * register can only handle 24 bit data we need to shift by 6 (done in
 	 * input channel configuration) */
 	/* disable block */
 	DFSDMF0->CR1 &= ~DFSDM_CR1_DFEN;
 	/* enable fast conversion, enable dma requests  */
 	DFSDMF0->CR1 = DFSDM_CR1_FAST | DFSDM_CR1_RDMAEN;
-	/* sinc^3 filter, decimation by 32, no integration */
+	/* sinc^3 filter, decimation by 64, no integration */
 	DFSDMF0->FCR = DFSDM_FCR_FORD_1 | DFSDM_FCR_FORD_0 |
         (DEC_DECIMATION_RATE - 1) << LSB(DFSDM_FCR_FOSR) | 
         0 << LSB(DFSDM_FCR_IOSR);
@@ -141,16 +141,16 @@ int Dec_Init(void)
 	/* enable filtering */
 	DFSDMF0->CR1 |= DFSDM_CR1_DFEN;
 
-	/* 1st Filter: mapped to channel 1 (Q samples), decimation by 32, sinc^3
-	 * filter, bit growth = N*log2(R) = 3 * log2(32) = 15, output data width =
-	 * input data width + bit growth = 12b + 15b = 27b, but since the output
-	 * register can only handle 24 bit data we need to shift by 3 (done in
+	/* 1st Filter: mapped to channel 1 (Q samples), decimation by 64, sinc^3
+	 * filter, bit growth = N*log2(R) = 3 * log2(64) = 18, output data width =
+	 * input data width + bit growth = 14b + 18b = 32b, but since the output
+	 * register can only handle 24 bit data we need to shift by 8 (done in
 	 * input channel configuration) */
 	/* disable block */
 	DFSDMF1->CR1 &= ~DFSDM_CR1_DFEN;
 	/* enable fast conversion, enable dma requests  */
 	DFSDMF1->CR1 = DFSDM_CR1_FAST | DFSDM_CR1_RDMAEN;
-	/* sinc^3 filter, decimation by 32, no integration */
+	/* sinc^3 filter, decimation by 64, no integration */
 	DFSDMF1->FCR = DFSDM_FCR_FORD_1 | DFSDM_FCR_FORD_0  | 
         (DEC_DECIMATION_RATE - 1) << LSB(DFSDM_FCR_FOSR) |
         0 << LSB(DFSDM_FCR_IOSR);

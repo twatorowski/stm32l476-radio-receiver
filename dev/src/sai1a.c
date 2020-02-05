@@ -18,6 +18,7 @@
 #include "stm32l476/dma.h"
 #include "stm32l476/nvic.h"
 #include "sys/critical.h"
+#include "util/fp.h"
 #include "util/elems.h"
 #include "util/msblsb.h"
 
@@ -69,7 +70,7 @@ int SAI1A_Init(void)
 
 	/* configure sai: 24 bit data, 16MHz / 2 / 256 = 31.25kHz sampling rate,
 	 * mono mode */
-	SAI1A->CR1 = SAI_CR1_DS_2 | SAI_CR1_DS_1 | SAI_CR1_DMAEN | SAI_CR1_MCKDIV_0
+	SAI1A->CR1 = SAI_CR1_DS_2 | SAI_CR1_DS_1 | SAI_CR1_DMAEN | SAI_CR1_MCKDIV_1
 			| SAI_CR1_MONO;
 	/* 1/4 fifo treshold */
 	SAI1A->CR2 = SAI_CR2_FTH_0;
@@ -91,10 +92,26 @@ int SAI1A_Init(void)
 }
 
 /* start streaming data */
-void SAI1A_StartStreaming(const int32_t *ptr, int num)
+void SAI1A_StartStreaming(float sampling_rate, const int32_t *ptr, int num)
 {
+    /* sai master clock frequency must be equal to = sampling_rate * mck_div *
+     * frame_length = sampling_rate * 4 * 256 = sampling_rate * 1024. We need to 
+     * generate that from the sai1 pll that is clocked from the REF clock by 
+     * adjusting the multiplier. the divider is constant and equal to 7 */
+    float mclk_freq = sampling_rate * 4 * 256;
+    /* compute the multiplier */
+    int mult = fp_round(mclk_freq * 7 / CPUCLOCK_REF_FREQ);
+
 	/* enter critical section */
 	Critical_Enter();
+
+    /* generate SAI1 clock */
+	RCC->PLLSAI1CFGR = mult << LSB(RCC_PLLSAI1CFGR_PLLSAI1N) | 
+        RCC_PLLSAI1CFGR_PLLSAI1PEN;
+	/* enable pll */
+	RCC->CR |= RCC_CR_PLLSAI1ON;
+	/* wait till it is stable */
+	while (!(RCC->CR & RCC_CR_PLLSAI1RDY));
 
 	/* set memory address */
 	DMA2C1->CMAR = (uint32_t)ptr;

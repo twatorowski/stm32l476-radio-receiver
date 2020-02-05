@@ -9,6 +9,7 @@
  */
 
 #include "err.h"
+#include "dev/await.h"
 #include "dev/extimux.h"
 #include "dev/joystick.h"
 #include "stm32l476/rcc.h"
@@ -24,6 +25,52 @@
 
 /* joystick event */
 ev_t joystick_ev;
+/* repeated keypress */
+static int last_status, repeat_cnt;
+
+/* called from the interrupt or the await module */
+static int Joystick_KeyPressCallback(void *arg)
+{
+    /* get joystick status */
+    int status = Joystick_GetStatus();
+
+    /* something is pressed */
+    if (status) {
+        /* build up event argument */
+	    joystick_evarg_t ea = { .status = status };
+        /* notify */
+        Ev_Notify(&joystick_ev, &ea);
+        /* fresh update */
+        if (last_status != status) {
+            /* reset the repetition counter */
+            repeat_cnt = 0;
+            /* monitor joystick state */
+            Await_CallMeLater(500, Joystick_KeyPressCallback, 0);
+        /* repeated start */
+        } else {
+            int delay;
+            /* update the repeat counter */
+            repeat_cnt++;
+            /* repetition speed adjustments */
+            if (repeat_cnt > 30) {
+                delay = 10;
+            } else if (repeat_cnt > 10) {
+                delay = 30;
+            } else {
+                delay = 100;
+            }
+            /* re-schedule monitoring */
+            Await_CallMeLater(delay, Joystick_KeyPressCallback, 0);
+        }
+    /* reset the repeat counter */
+    } else {
+        repeat_cnt = 0;
+    }
+    /* update the status */
+    last_status = status;
+    /* report status */
+    return EOK;
+}
 
 /* interrupt for exti 0-3 and 5 */
 void Joystick_Exti0_3_5Isr(void)
@@ -32,13 +79,8 @@ void Joystick_Exti0_3_5Isr(void)
 	EXTI->PR1 = EXTI_PR1_PIF1 | EXTI_PR1_PIF2 | EXTI_PR1_PIF3 | 
         EXTI_PR1_PIF5;
 
-	/* build up event argument */
-	joystick_evarg_t ea = { .status = Joystick_GetStatus() };
-    
-    /* show current status */
-    dprintf("%d\n", ea.status);
-	/* notify */
-	Ev_Notify(&joystick_ev, &ea);
+    /* start the processing */
+    Await_CallMeLater(0, Joystick_KeyPressCallback, 0);
 }
 
 /* initialize buttons support */

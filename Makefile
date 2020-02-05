@@ -29,10 +29,11 @@ SRC += ./reset.c
 # at protocol
 SRC += ./at/src/at.c ./at/src/cmd.c
 SRC += ./at/src/rxtx_usart2.c ./at/src/rxtx.c
-SRC += ./at/src/ntfy.c
+SRC += ./at/src/ntfy.c 
 
 # at prococol command submodules
 SRC += ./at/cmd/src/gen.c ./at/cmd/src/bl.c
+SRC += ./at/cmd/src/radio.c
 
 # at protocol notification submodules
 SRC += ./at/ntfy/src/debug.c
@@ -168,7 +169,7 @@ ifeq ($(TOOLCHAIN),llvm)
     CC_FLAGS += -Wno-keyword-macro
 endif
 # warning levels
-CC_FLAGS += -g3 -ggdb -fdata-sections -ffunction-sections
+CC_FLAGS += -g3 -ggdb -fdata-sections -ffunction-sections -ffast-math
 CC_FLAGS += -Wall -Wno-format
 CC_FLAGS += -pedantic-errors -Wno-implicit-fallthrough
 # use defines such as M_PI from math.h

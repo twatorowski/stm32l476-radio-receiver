@@ -10,8 +10,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "assert.h"
 #include "err.h"
 #include "dev/analog.h"
+#include "dev/led.h"
 #include "stm32l476/rcc.h"
 #include "stm32l476/nvic.h"
 #include "stm32l476/dma.h"
@@ -39,17 +41,14 @@ void Analog_DMA1C1Isr(void)
 	/* clear interrupt */
 	DMA1->IFCR = isr;
 
+    /* set the led off to indicate the end of processing */
+    Led_SetState(1, LED_RED);
+
 	/* full transfer occured? */
 	if (isr & DMA_ISR_TCIF1) 
 		ea.samples = &samples[samples_num / 2];
-    
-    /* bring to the middle value */
-    for (int i = 0; i < ea.num; i += 4) {
-        ea.samples[i + 0] -= 2048;
-        ea.samples[i + 1] -= 2048;
-        ea.samples[i + 2] -= 2048;
-        ea.samples[i + 3] -= 2048;
-    }
+
+    Led_SetState(0, LED_RED);
 
 	/* notify others */
 	Ev_Notify(&analog_ev, &ea);
@@ -124,16 +123,17 @@ int Analog_Init(void)
 	/* loop until it is finished */
 	while (ADC1->CR & ADC_CR_ADCAL);
 
-	/* set sampling: pa0 - ch5 - 2.5 adc cycles */
+	/* set sampling: pa0 - ch5 - 2.5 adc cycles, which gives 15 clock cycles for 
+     * the sample */
 	ADC1->SMPR1 = (ADC1->SMPR1 & ~ADC_SMPR1_SMP5) | ADC_SMPR1_SMP5_6CLK5;
 	/* set configuration: overrun stop disabled, rising edge external trigger
 	 * detection, select tim2 trgo as external trigger, enable dma in circular
 	 * mode */
 	ADC1->CFGR = ADC_CFGR_OVRMOD | ADC_CFGR_EXTSEL_TIM2_TRGO | ADC_CFGR_DMAEN |
 			ADC_CFGR_EXTEN_RE | ADC_CFGR_DMACFG;
-	/* enable oversampling: 4x, shift by 2 bit */
-	ADC1->CFGR2 = ADC_CFGR2_TROVS | 2 << LSB(ADC_CFGR2_OVSS) | 
-        1 << LSB(ADC_CFGR2_OVSR) | ADC_CFGR2_ROVSE;
+	// /* enable oversampling: 2x, shift by 1 bit */
+	// ADC1->CFGR2 = ADC_CFGR2_TROVS | 1 << LSB(ADC_CFGR2_OVSS) | 
+    //     0 << LSB(ADC_CFGR2_OVSR) | ADC_CFGR2_ROVSE;
 
 	/* clear ready flag */
 	ADC1->ISR = ADC_ISR_ADRDY;
@@ -151,6 +151,9 @@ int Analog_Init(void)
 /* configure sampling */
 void Analog_StartSampling(int channel, int pres, int16_t *ptr, int num)
 {
+    /* sanity check */
+    assert(pres > 15, "prescaler value is too small", pres);
+
 	/* enter critical section */
 	Critical_Enter();
 
@@ -164,7 +167,7 @@ void Analog_StartSampling(int channel, int pres, int16_t *ptr, int num)
 	/* disable timer */
 	TIM2->CR1 &= ~TIM_CR1_CEN;
 	/* write new prescaling setting */
-	TIM2->ARR = (pres / 4) - 1;
+	TIM2->ARR = (pres / 1) - 1;
 	/* apply setting */
 	TIM2->EGR = TIM_EGR_UG;
 	/* enable timer */

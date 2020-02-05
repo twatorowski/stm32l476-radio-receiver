@@ -13,6 +13,7 @@
 #include "err.h"
 #include "sys/critical.h"
 #include "util/elems.h"
+#include "util/fp.h"
 
 #define DEBUG
 #include "debug.h"
@@ -110,11 +111,13 @@ void OPTIMIZE("O3") Mix2_Mix(const float *i, const float *q,
 }
 
 /* set the current lo frequency */
-int Mix2_SetLOFrequency(int hz)
+float Mix2_SetLOFrequency(float f)
 {
+    /* determine band spacing offered by the second lo */
+    const float band_spacing = (float)RF_SAMPLING_FREQ / DEC_DECIMATION_RATE / 
+        elems(cos_lut);
     /* get the actual band */
-    int band = (int)elems(cos_lut) * hz / 
-        (RF_SAMPLING_FREQ / DEC_DECIMATION_RATE);
+    int band = fp_round(f / band_spacing);
 
     /* sanity check */
     assert(band > -(int)elems(cos_lut) / 2 && band <= (int)elems(cos_lut) / 2, 
@@ -124,10 +127,10 @@ int Mix2_SetLOFrequency(int hz)
      * in-phase = cos(band * t), quadrature = -sin(band * t) */
     for (int i = 0; i < elems(cos_lut); i++) {
         i_lut[i] = cos_lut[(i * band) & (elems(cos_lut) - 1)];
-        q_lut[i] = cos_lut[(elems(cos_lut) / 4 + i * band) & (elems(cos_lut) - 1)];
+        q_lut[i] = cos_lut[((int)elems(cos_lut) / 4 + i * band) & (elems(cos_lut) - 1)];
     }
     /* store current band */
     curr_band = band;
     /* return the actual frequency */
-    return band * RF_SAMPLING_FREQ / DEC_DECIMATION_RATE / (int)elems(cos_lut);
+    return band * band_spacing;
 }

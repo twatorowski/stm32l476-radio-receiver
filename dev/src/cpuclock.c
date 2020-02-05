@@ -43,26 +43,6 @@ int CpuClock_Init(void)
 	/* wait till its selected */
 	while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 
-    /* generate SAI1 clock IN = REF = (HSE) 8MHz, VCO = 8MHz * 14 = 112MHz,
-	 * OUT = VCO / P = 112MHz / 7 = 16MHz */
-	RCC->PLLSAI1CFGR = 14 << LSB(RCC_PLLSAI1CFGR_PLLSAI1N) | 
-        RCC_PLLSAI1CFGR_PLLSAI1PEN;
-	/* enable pll */
-	RCC->CR |= RCC_CR_PLLSAI1ON;
-	/* wait till it is stable */
-	while (!(RCC->CR & RCC_CR_PLLSAI1RDY));
-
-	/* start lsi clock */
-	RCC->CSR |= RCC_CSR_LSION;
-	/* wait till it becomes stable */
-	while ((RCC->CSR & RCC_CSR_LSIRDY) == 0);
-
-	/* select lsi as RTCCLK/LCDCLK */
-	/* disable register protection */
-	PWR->CR1 |= PWR_CR1_DBP;
-	/* select clock */
-	RCC->BDCR |= RCC_BDCR_RTCSEL_1;
-
 	/* exit critical section */
 	Critical_Exit();
 

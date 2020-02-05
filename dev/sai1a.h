@@ -30,10 +30,11 @@ int SAI1A_Init(void);
  * @brief Start Streaming audio samples stored in the cricular buffer pointed 
  * by ptr that is `num` samples in size
  * 
+ * @param sampling_rate desired sampling rate
  * @param ptr buffer pointer
  * @param num size of buffer expressed in number of samples
  */
-void SAI1A_StartStreaming(const int32_t *ptr, int num);
+void SAI1A_StartStreaming(float sampling_rate, const int32_t *ptr, int num);
 
 
 #endif /* DEV_SAI1A_H_ */

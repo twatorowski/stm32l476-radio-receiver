@@ -27,6 +27,8 @@
 
 /** @name System CPU Frequency */
 /** @{ */
+/** @brief reference oscillator speed (hse or it's prescaled version) */
+#define CPUCLOCK_REF_FREQ                           8000000
 /** @brief system frequency in Hz */
 #define CPUCLOCK_FREQ							    80000000
 /** @} */
@@ -99,8 +101,10 @@
 
 /** @name IQ Decimators */
 /** @{ */
-/** @brief decimation rate */
-#define DEC_DECIMATION_RATE                         32
+/** @brief decimation rate, must be a power of 2 */
+#define DEC_DECIMATION_RATE                         64
+/** maximal input word bit width */
+#define DEC_MAX_INPUT_BITS                          14
 /** @} */
 
 /** @name CS43L22 configuration */
@@ -111,8 +115,10 @@
 
 /** @name RF paramaters  */
 /** @{ */
-/** @brief Sampling frequencu */
-#define RF_SAMPLING_FREQ                            1000000
+/** @brief Sampling frequency */
+#define RF_SAMPLING_FREQ                            2500000
+/** @define number of bits per rf sample */
+#define RF_SAMPLING_BITS                            12
 /** @} */
 
 

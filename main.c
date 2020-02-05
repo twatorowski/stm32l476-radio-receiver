@@ -97,18 +97,11 @@ void Main(void)
     /* bring up the dac */
     CS43L22_Init();
 
-
     /* at commands protocol */
     AT_Init();
 
     /* initialize the radio receiver logic */
     Radio_Init();
-
-    volatile int32_t _x = 0;
-    int bits = 24;
-    int32_t x = _x, saturation = (1 << (bits - 1));
-
-    _x = x < -saturation ? -saturation : (x >= saturation ? saturation - 1 : x);
 
     /* tests */
     /* initialize usart2 test */

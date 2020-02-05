@@ -36,6 +36,6 @@ int Mix1_Mix(const int16_t *rf, int num, int16_t *i, int16_t *q);
  * 
  * @return int actual frequency applied in Hz.
  */
-int Mix1_SetLOFrequency(int hz);
+float Mix1_SetLOFrequency(float f);
 
 #endif /* RADIO_MIX1_H */

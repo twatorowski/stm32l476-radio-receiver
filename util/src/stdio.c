@@ -1009,7 +1009,7 @@ static int scan_double(const char *str, size_t size, void *val, struct fs *fs)
     /* possible outputs */
     union {
         /* all of these may be produced */
-        double d; long double ld;
+        float f; double d; long double ld;
     } PACKED *d = val;
 
     /* procesing states */
@@ -1213,7 +1213,8 @@ static int scan_double(const char *str, size_t size, void *val, struct fs *fs)
     /* store the result with valid conversion */
     switch (fs->length) {
     case LENGTH_LONG_DOUBLE: d->ld = result; break;
-    default : d->d = result; break;
+    case LENGTH_LONG : d->d = result; break;
+    default : d->f = result; break;
     }
 
     /* return the number of chars consumed or a negative number that indicates 
