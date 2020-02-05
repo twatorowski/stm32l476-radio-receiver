@@ -47,6 +47,7 @@ static enum states {
 /* guarding semaphore */
 static sem_t sem = { .released = 1 };
 
+#if 0
 /* radio frequency signal (187.5kHz, mod: am 10% 4*976Hz) */
 static const int16_t _rf[] = {
     +0x0000, +0x04bd, +0x03a2, -0x01f8, -0x0527, -0x01f9, +0x03a7, +0x04c8,
@@ -178,6 +179,7 @@ static const int16_t _rf[] = {
     +0x0000, +0x049e, +0x038a, -0x01eb, -0x0505, -0x01ed, +0x0390, +0x04a9,
     +0x0000, -0x04ad, -0x0395, +0x01f1, +0x0515, +0x01f3, -0x039b, -0x04b8,
 };
+#endif
 
 /* dac enable process callback */
 static int TestRadio_DACEnableCallback(void *ptr)
@@ -213,7 +215,7 @@ static int TestRadio_DACEnableCallback(void *ptr)
     /* report status */
     return EOK;
 }
-int cnt, dh;
+
 /* start the processing */
 static int TestRadio_Process(void *ptr)
 {
@@ -255,7 +257,7 @@ static int TestRadio_Process(void *ptr)
     /* start streaming audio to the dac */
     if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
         /* start streaming data */
-        SAI1A_StartStreaming(dac, elems(dac));
+        SAI1A_StartStreaming(48000, dac, elems(dac));
         /* start the dac enable procedure */
         Await_CallMeLater(100, TestRadio_DACEnableCallback, 0);
     }

@@ -61,7 +61,7 @@ const at_cmd_t at_cmd_radio_list[] = {
     { .cmd = "AT+RADIO_TUNE?", .func = ATCmdRadio_ProcFrequencyRead },
 
     /* end of the command list */
-    { .cmd = "" },
+    { .cmd = 0 },
 };
 
 /* initialize general commands submodule */

@@ -15,7 +15,7 @@
 #include "dev/usart2.h"
 #include "at/cmd.h"
 #include "at/rxtx.h"
-#include "at/ntfy.h"
+#include "at/ntf.h"
 #include "sys/atomic.h"
 #include "util/elems.h"
 #include "util/minmax.h"

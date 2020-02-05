@@ -29,19 +29,17 @@ SRC += ./reset.c
 # at protocol
 SRC += ./at/src/at.c ./at/src/cmd.c
 SRC += ./at/src/rxtx_usart2.c ./at/src/rxtx.c
-SRC += ./at/src/ntfy.c 
+SRC += ./at/src/ntf.c 
 
 # at prococol command submodules
-SRC += ./at/cmd/src/gen.c ./at/cmd/src/bl.c
-SRC += ./at/cmd/src/radio.c
+SRC += ./at/cmd/src/gen.c ./at/cmd/src/radio.c
 
 # at protocol notification submodules
-SRC += ./at/ntfy/src/debug.c
+SRC += ./at/ntf/src/debug.c
 
 # device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
 SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
-SRC += ./dev/src/dec.c
 SRC += ./dev/src/analog.c ./dev/src/i2c1.c
 SRC += ./dev/src/cs43l22.c ./dev/src/rfin.c
 SRC += ./dev/src/sai1a.c ./dev/src/display.c
@@ -49,6 +47,7 @@ SRC += ./dev/src/extimux.c ./dev/src/joystick.c
 SRC += ./dev/src/await.c ./dev/src/systime.c
 SRC += ./dev/src/timemeas.c ./dev/src/led.c
 SRC += ./dev/src/invoke.c ./dev/src/lsi.c
+SRC += ./dev/src/dec.c
 
 # digital signal processing
 SRC += ./dsp/src/biquad.c
@@ -56,7 +55,7 @@ SRC += ./dsp/src/biquad.c
 # radio modules
 SRC += ./radio/src/mix1.c
 SRC += ./radio/src/mix2.c ./radio/src/demod_am.c
-SRC += ./radio/src/radio.c
+SRC += ./radio/src/radio.c ./radio/src/dec4.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
@@ -66,7 +65,6 @@ SRC += ./sys/src/sem.c
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
-SRC += ./test/src/dynamic_int.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

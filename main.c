@@ -32,7 +32,6 @@
 #include "test/am_radio.h"
 #include "test/dac_sine.h"
 #include "test/dec.h"
-#include "test/dynamic_int.h"
 #include "test/float_fixp.h"
 #include "test/radio.h"
 #include "test/usart2.h"

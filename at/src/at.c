@@ -9,7 +9,7 @@
 
 #include "err.h"
 #include "at/cmd.h"
-#include "at/ntfy.h"
+#include "at/ntf.h"
 #include "at/rxtx.h"
 
 /* AT protocol at commands interface */
@@ -20,7 +20,7 @@ int AT_Init(void)
 	/* initialize command parser */
 	ATCmd_Init();
 	/* initialize notifications */
-	ATNtfy_Init();
+	ATNtf_Init();
 
 	/* report status */
 	return EOK;
@@ -32,7 +32,7 @@ void AT_Poll(void)
 	/* poll rx/tx module */
 	ATRxTx_Poll();
 	/* poll notification stuff */
-	ATNtfy_Poll();
+	ATNtf_Poll();
 	/* poll command module */
 	ATCmd_Poll();
 }

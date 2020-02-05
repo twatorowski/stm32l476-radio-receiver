@@ -26,7 +26,6 @@
 #include "dev/joystick.h"
 #include "dev/sai1a.h"
 #include "dev/usart2.h"
-#include "test/dynamic_int.h"
 
 /* shorthands so that the vector table looks neat! */
 #define SET_SP(sp)                  [STM32_VECTOR_STACK_PTR_BASE].v = sp
@@ -74,7 +73,4 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
 
     /* invoke module */
     SET_INT_VEC(STM32_INT_FMC, Invoke_FMCIsr),
-
-    /* test for the dynamic interrupt level changing */
-    SET_INT_VEC(STM32_INT_LCD, TestDynInt_LCDIsr),
 };

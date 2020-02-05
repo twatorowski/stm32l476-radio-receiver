@@ -71,7 +71,7 @@ static int TestDACSine_EnCallback(void *ptr)
         /* advance the state machine */
         state = INIT; 
         /* start the serial audio data stream */
-        SAI1A_StartStreaming((int32_t *)sine, elems(sine)); 
+        SAI1A_StartStreaming(48000, (int32_t *)sine, elems(sine)); 
         /* lock the await module */
         Await_CallMeLater(100, TestDACSine_EnCallback, 0);
     } break;

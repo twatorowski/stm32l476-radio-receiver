@@ -1,5 +1,5 @@
 /**
- * @file ntfy.h
+ * @file ntf.h
  *
  * @date 28.06.2019
  * @author twatorowski
@@ -7,8 +7,8 @@
  * @brief 
  */
 
-#ifndef AT_NTFY_H_
-#define AT_NTFY_H_
+#ifndef AT_NTF_H_
+#define AT_NTF_H_
 
 #include <stdint.h>
 #include <stddef.h>
@@ -18,11 +18,9 @@
 /** @name Notification mask bit fields definitions */
 /** @{ */
 /** @brief debug notifications */
-#define AT_NTFY_MASK_DEBUG                              (0x00000001)
-#define AT_NTFY_MASK_MAIN_TRACKER                       (0x00000002)
-#define AT_NTFY_MASK_GPS_MON                            (0x00000004)
-#define AT_NTFY_MASK_NMEA                               (0x00000008)
-
+#define AT_NTF_MASK_DEBUG                               (0x00000001)
+/** @brief radio data notifications */
+#define AT_NTF_MASK_RADIO_DATA                          (0x00000002)
 /** @} */
 /** @} */
 
@@ -31,20 +29,20 @@
  *
  * @return initialization status error code (@ref ERR_ERROR_CODES)
  */
-int ATNtfy_Init(void);
+int ATNtf_Init(void);
 
 /**
  * @brief Polling function of the notification generation module. To be called within
  * AT_Poll().
  */
-void ATNtfy_Poll(void);
+void ATNtf_Poll(void);
 
 /**
  * @brief This function shall invoke the notification data drainage, which will in
  * turn produce notification strings and try to put them within the output buffer. To
  * be called by the ATRxTx drivers at the end of transmission.
  */
-void ATNtfy_DrainData(void);
+void ATNtf_DrainData(void);
 
 /**
  * @brief Sets the notification mask, enabling or disabling the notifications on
@@ -55,7 +53,9 @@ void ATNtfy_DrainData(void);
  *
  * @return status code (@ref ERR_ERROR_CODES)
  */
-int ATNtfy_SetNotificaionMask(int iface, uint32_t mask);
+
+int ATNtf_SetNotificaionMask(int iface, uint32_t mask);
+
 /**
  * @brief Gets the value of the currently set notification mask for selected
  * interface.
@@ -65,8 +65,7 @@ int ATNtfy_SetNotificaionMask(int iface, uint32_t mask);
  *
  * @return status code (@ref ERR_ERROR_CODES)
  */
-int ATNtfy_GetNotificationMask(int iface, uint32_t *mask);
-
+int ATNtf_GetNotificationMask(int iface, uint32_t *mask);
 
 /**
  * @brief Get the orr'ed value of the notification mask for all of 
@@ -76,7 +75,7 @@ int ATNtfy_GetNotificationMask(int iface, uint32_t *mask);
  * 
  * @return int status code (@ref ERR_ERROR_CODES)
  */
-int ATNtfy_GetNotificationORMask(uint32_t *mask);
+int ATNtf_GetNotificationORMask(uint32_t *mask);
 
 /**
  * @brief Sends a notification over given interface
@@ -87,6 +86,6 @@ int ATNtfy_GetNotificationORMask(uint32_t *mask);
  * 
  * @return int status code (@ref ERR_ERROR_CODES)
  */
-int ATNtfy_SendNotification(int iface, const char *str, size_t len);
+int ATNtf_SendNotification(int iface, const char *str, size_t len);
 
 #endif /* AT_NTFY_H_ */

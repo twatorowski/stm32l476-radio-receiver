@@ -21,6 +21,7 @@
 #include "dsp/fixp_sat.h"
 #include "dsp/float_fixp.h"
 #include "dsp/float_scale.h"
+#include "radio/dec4.h"
 #include "radio/demod_am.h"
 #include "radio/mix1.h"
 #include "radio/mix2.h"
@@ -40,10 +41,14 @@ static float lo1_frequency, lo2_frequency;
 static int16_t rf[2048];
 /* complex data after 1st stage mixing */
 static int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
-/* complex data after downsampling: in-phase channel, and quadrature channel */
-static float i_dec[elems(rf) / 2 / DEC_DECIMATION_RATE], 
-    q_dec[elems(rf) / 2 / DEC_DECIMATION_RATE];
-/* AM-demodulated samples */
+/* complex data after downsampling: in-phase channel, and quadrature channel. 
+ * we use twice as much space needed to operate in ping-pong mode */
+static float i_dec[2][elems(rf) / 2 / DEC_DECIMATION_RATE], 
+    q_dec[2][elems(rf) / 2 / DEC_DECIMATION_RATE];
+/* ping pong indicator */
+static int dec_pp;
+
+/* AM-demodulated audio samples */
 static float dem[elems(rf) / 2 / DEC_DECIMATION_RATE];
 
 /* audio gain */
@@ -57,10 +62,6 @@ static uint32_t dac_head;
 static enum dac_states {
     LOCK, INIT, PLAY, VOLUME, ON, ERR,
 } dac_state;
-
-/* this semaphore guards the signal path from overflows. if the processing does 
- * not keep up with the incoming rf samples then an assert will be fired */
-static sem_t sem = { .released = 1 };
 
 /* callback called to update the frequencies of both local oscillators and to 
  * update the LCD display */
@@ -167,50 +168,9 @@ static int Radio_DACEnableCallback(void *ptr)
 /* this is called after the samples get decimated */
 static int Radio_DecimationCallback(void *ptr)
 {
-    /* cast event argument */
-    dec_cbarg_t *ca = ptr;
-
-    /* set the led off to indicate the end of processing */
-    Led_SetState(1, LED_RED);
-    
-    /* 2nd stage mixing, done in-situ */
-    Mix2_Mix(ca->i, ca->q, ca->num, ca->i, ca->q);
-
-    /* filter before demodulation */
-    DemodAM_Filter(ca->i, ca->q, ca->num, ca->i, ca->q);
-    /* demodulate the output data */
-    DemodAM_Demodulate(ca->i, ca->q, ca->num, dem);
-
-    /* apply gain */
-    FloatScale_Scale(dem, ca->num, set_gain, dem);
-    /* convert to the fixed point notation for the dac */
-    FloatFixp_FloatToFixp32(dem, ca->num, 24, dac + dac_head);
-    /* do the saturation to avoid overflows when the audio is getting loud */
-    FixpSat_Saturate(dac + dac_head, ca->num, 24, dac + dac_head);
-
-
-    /* update dac head index */
-    dac_head = (dac_head + ca->num) % elems(dac);
-
-    /* start streaming audio to the dac if not already started, but only if we 
-     * have at least half of the dac buffer filled with data. this prevents the 
-     * artifacts by ensuring that we are not writing data that is currenlty 
-     * being sent to dac */
-    if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
-        /* start streaming data */
-        SAI1A_StartStreaming((float)RF_SAMPLING_FREQ / DEC_DECIMATION_RATE, 
-            dac, elems(dac));
-        /* start the dac enable procedure 100 ms after the stream was started 
-         * to avoid audio glitches */
-        Await_CallMeLater(100, Radio_DACEnableCallback, 0);
-    }
-
-    /* set the led off to indicate the end of processing */
-    Led_SetState(0, LED_RED);
-    /* TODO: release the semaphore */
-    Sem_Release(&sem);
-
-    /* report status */
+    /* make pings into pongs */
+    dec_pp = !dec_pp;
+    /* report callback processing status */
     return EOK;
 }
 
@@ -220,26 +180,66 @@ static int Radio_AnalogCallback(void *ptr)
     /* cast event argument */
     analog_evarg_t *ea = ptr;
 
-    //TODO:
-    // /* check if calls do not overlap */
-    // assert(Sem_Lock(&sem, CB_NONE) == EOK, 
-    //     "rf samples overflown the signal path", 0);
-
-    /* do not proceed with the processing when we are not done with previous 
-     * frame */
-    if (Sem_Lock(&sem, CB_NONE) != EOK)
-        return EOK;
+    /* head/tail adjusted pointers to the ping-pong buffer */
+    float *i_dec_head = i_dec[ dec_pp], *q_dec_head = q_dec[ dec_pp];
+    float *i_dec_tail = i_dec[!dec_pp], *q_dec_tail = q_dec[!dec_pp];
+    /* number of samples after the hardware decimator */
+    const int hw_dec_num = elems(i_dec[0]);
+    /* number of samples after software decimator did it's job */
+    const int sw_dec_num = hw_dec_num / 4;
     
     /* set the led on to indicate the start of the processing */
     Led_SetState(1, LED_RED);
+
     /* do the mixing */
     Mix1_Mix(ea->samples, ea->num, i_mix1, q_mix1);
-    /* set the led off to indicate the end of processing */
-    Led_SetState(0, LED_RED);   
-    /* decimate data */
-    Dec_Decimate(i_mix1, q_mix1, ea->num, i_dec, q_dec, 
+    /* start the parallel process of rf samples decimation */
+    Dec_Decimate(i_mix1, q_mix1, ea->num, i_dec_head, q_dec_head, 
         Radio_DecimationCallback);
-    
+
+    /* 2nd stage mixing, done in-situ */
+    Mix2_Mix(i_dec_tail, q_dec_tail, hw_dec_num, i_dec_tail, q_dec_tail);
+
+    /* decimation by 4 for the sake of processing speed-up and to allow pushing 
+     * the data out using AT commands */
+    /* firstly apply the filtration */
+    Dec4_Filter(i_dec_tail, q_dec_tail, hw_dec_num, i_dec_tail, 
+        q_dec_tail);
+    /* then drop unused samples */
+    Dec4_Decimate(i_dec_tail, q_dec_tail, hw_dec_num, i_dec_tail, 
+        q_dec_tail);
+
+    /* filter before demodulation */
+    DemodAM_Filter(i_dec_tail, q_dec_tail, hw_dec_num / 4, i_dec_tail, 
+        q_dec_tail);
+    /* demodulate the output data */
+    DemodAM_Demodulate(i_dec_tail, q_dec_tail, hw_dec_num / 4, dem);
+
+    /* apply gain */
+    FloatScale_Scale(dem, sw_dec_num, set_gain, dem);
+    /* convert to the fixed point notation for the dac */
+    FloatFixp_FloatToFixp32(dem, sw_dec_num, 24, dac + dac_head);
+    /* do the saturation to avoid overflows when the audio is getting loud */
+    FixpSat_Saturate(dac + dac_head, sw_dec_num, 24, dac + dac_head);
+
+    /* update dac head index */
+    dac_head = (dac_head + sw_dec_num) % elems(dac);
+
+    /* start streaming audio to the dac if not already started, but only if we 
+     * have at least half of the dac buffer filled with data. this prevents the 
+     * artifacts by ensuring that we are not writing data that is currenlty 
+     * being sent to dac */
+    if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
+        /* start streaming data */
+        SAI1A_StartStreaming((float)RF_SAMPLING_FREQ / DEC_DECIMATION_RATE / 4, 
+            dac, elems(dac));
+        /* start the dac enable procedure 100 ms after the stream was started 
+         * to avoid audio glitches */
+        Await_CallMeLater(100, Radio_DACEnableCallback, 0);
+    }
+
+    /* set the led off to indicate the end of the processing */
+    Led_SetState(0, LED_RED);
     
     /* report status */
     return EOK;

@@ -15,7 +15,7 @@
 
 #include "compiler.h"
 #include "config.h"
-#include "at/ntfy/debug.h"
+#include "at/ntf/debug.h"
 #include "sys/sem.h"
 #include "util/stdio.h"
 #include "util/concatstr.h"
@@ -44,7 +44,7 @@
 		int __l = snprintf(__debug_buf, sizeof(__debug_buf),                \
             DBG_MSG_PRFX fmt, ## __VA_ARGS__);			                    \
 		/* try to send debug over the tp */									\
-		ATNtfyDebug_PutDebugData(__debug_buf, __l);							\
+		ATNtfDebug_PutDebugData(__debug_buf, __l);							\
 	} while (0)
 
 #else

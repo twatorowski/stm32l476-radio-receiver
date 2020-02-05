@@ -12,17 +12,28 @@
 
 #include <stddef.h>
 
+#include "at/ntf.h"
+
+/** @name Notification mask bit fields definitions */
+/** @{ */
+/** @brief debug notifications */
+#define AT_NTF_MASK_DEBUG                               (0x00000001)
+/** @brief radio data notifications */
+#define AT_NTF_MASK_RADIO_DATA                          (0x00000002)
+/** @} */
+
+
 /**
  * @brief Initialize debug notifications submodule
  * 
  * @return int error code (@ref ERR_ERROR_CODES)
  */
-int ATNtfyDebug_Init(void);
+int ATNtfDebug_Init(void);
 
 /**
  * @brief poll debug notifications submodule 
  */
-void ATNtfyDebug_Poll(void);
+void ATNtfDebug_Poll(void);
 
 /**
  * @brief Sends debug strings (printfs) as AT notifications. All debug strings must
@@ -33,7 +44,7 @@ void ATNtfyDebug_Poll(void);
  *
  * @return status code (@ref ERR_ERROR_CODES)
  */
-int ATNtfyDebug_PutDebugData(const char *str, size_t len);
+int ATNtfDebug_PutDebugData(const char *str, size_t len);
 
 
 #endif /* AT_NTFY_DEBUG_H_ */

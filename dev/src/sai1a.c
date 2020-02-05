@@ -68,10 +68,9 @@ int SAI1A_Init(void)
 	/* set peripheral address */
 	DMA2C1->CPAR = (uint32_t)&SAI1A->DR;
 
-	/* configure sai: 24 bit data, 16MHz / 2 / 256 = 31.25kHz sampling rate,
-	 * mono mode */
-	SAI1A->CR1 = SAI_CR1_DS_2 | SAI_CR1_DS_1 | SAI_CR1_DMAEN | SAI_CR1_MCKDIV_1
-			| SAI_CR1_MONO;
+	/* configure sai: 24 bit data, divide input clock by 16 */
+	SAI1A->CR1 = SAI_CR1_DS_2 | SAI_CR1_DS_1 | SAI_CR1_DMAEN | 
+        (16 / 2) << LSB(SAI_CR1_MCKDIV) | SAI_CR1_MONO;
 	/* 1/4 fifo treshold */
 	SAI1A->CR2 = SAI_CR2_FTH_0;
 	/* configure slots (use two of the slots) */
@@ -98,7 +97,7 @@ void SAI1A_StartStreaming(float sampling_rate, const int32_t *ptr, int num)
      * frame_length = sampling_rate * 4 * 256 = sampling_rate * 1024. We need to 
      * generate that from the sai1 pll that is clocked from the REF clock by 
      * adjusting the multiplier. the divider is constant and equal to 7 */
-    float mclk_freq = sampling_rate * 4 * 256;
+    float mclk_freq = sampling_rate * 16 * 256;
     /* compute the multiplier */
     int mult = fp_round(mclk_freq * 7 / CPUCLOCK_REF_FREQ);
 

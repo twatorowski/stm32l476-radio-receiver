@@ -43,6 +43,7 @@ int CpuClock_Init(void)
 	/* wait till its selected */
 	while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 
+
 	/* exit critical section */
 	Critical_Exit();
 
