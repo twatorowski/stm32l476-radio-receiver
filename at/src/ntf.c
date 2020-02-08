@@ -17,6 +17,7 @@
 
 /* submodules */
 #include "at/ntf/debug.h"
+#include "at/ntf/radio.h"
 
 /* notification mask */
 static uint32_t ntf_mask[ATRXTX_IFACENUM] = {
@@ -34,6 +35,7 @@ int ATNtf_Init(void)
 
     /* initialize all notification submodules */
     rc |= ATNtfDebug_Init();
+    rc |= ATNtfRadio_Init();
 
 	/* report status */
 	return EOK;
@@ -45,6 +47,7 @@ void ATNtf_Poll(void)
     /* poll all notification submodules */
     /* debug */
     ATNtfDebug_Poll();
+    ATNtfRadio_Poll();
 }
 
 /* set notification mask */

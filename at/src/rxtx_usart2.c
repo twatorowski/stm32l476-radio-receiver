@@ -28,7 +28,7 @@ static volatile uint32_t rx_buf_offs, tx_head, tx_head_alloc, tx_tail;
 static uint8_t rx_buf[512 + 32], tx_buf[2048];
 
 /* usart transmission complete callback */
-static int ATRxTxUSART2_USART1TxCallback(void *ptr)
+static int ATRxTxUSART2_USART2TxCallback(void *ptr)
 {
     /* callback argument */
     usart2_cbarg_t *arg = ptr;
@@ -53,7 +53,7 @@ static int ATRxTxUSART2_USART1TxCallback(void *ptr)
 		/* limit to the number of bytes buffered */
 		bytes_wrap = min(bytes_wrap, bytes_buffered);
 		/* send the data */
-		USART2_Send(tx_buf + tail, bytes_wrap, ATRxTxUSART2_USART1TxCallback);
+		USART2_Send(tx_buf + tail, bytes_wrap, ATRxTxUSART2_USART2TxCallback);
 	}
     
     /* report status */
@@ -109,7 +109,7 @@ int ATRxTxUSART2_Init(void)
 {
 	/* lock the reception semaphore and start reception */
 	Sem_Lock(&usart2rx_sem, ATRxTxUSART2_USART1RxCallback);
-    Sem_Lock(&usart2tx_sem, ATRxTxUSART2_USART1TxCallback);
+    Sem_Lock(&usart2tx_sem, ATRxTxUSART2_USART2TxCallback);
 	/* report status */
 	return EOK;
 }
@@ -159,7 +159,7 @@ int ATRxTxUSART2_SendResponse(int is_notify, const char *str, size_t len)
         Atomic_MOV32(&tx_head, &tx_head_alloc);
         /* restart transmission */
         if (Sem_Lock(&usart2tx_sem, CB_NONE) == EOK)
-			 ATRxTxUSART2_USART1TxCallback(0);
+			 ATRxTxUSART2_USART2TxCallback(0);
     }
 
 	/* report success */

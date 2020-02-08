@@ -96,7 +96,7 @@
 /** @name USART2 configuration */
 /** @{ */
 /** @brief usart baudrate */
-#define USART2_BAUD_RATE                            2000000
+#define USART2_BAUD_RATE                            1500000
 /** @} */
 
 /** @name IQ Decimators */

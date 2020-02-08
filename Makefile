@@ -12,9 +12,9 @@ OPT_LEVEL = -Os
 
 # -------------------------- VERSION NUMBER -------------------------
 # software version
-SW_VER_MAJOR = 0
+SW_VER_MAJOR = 1
 SW_VER_MINOR = 0
-SW_VER_BUILD = 1
+SW_VER_BUILD = 0
 
 # hardware version
 HW_VER_MAJOR = 1
@@ -35,7 +35,10 @@ SRC += ./at/src/ntf.c
 SRC += ./at/cmd/src/gen.c ./at/cmd/src/radio.c
 
 # at protocol notification submodules
-SRC += ./at/ntf/src/debug.c
+SRC += ./at/ntf/src/debug.c ./at/ntf/src/radio.c
+
+# base64 encoder-decoder
+SRC += ./base64/src/base64.c
 
 # device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c

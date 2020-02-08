@@ -1,27 +1,24 @@
 # stm32l476-radio-receiver
 
-All on-board digital AM radio receiver implemented on the stm32l4discovery board. No external components needed. Well maybe besides the looooong antenna wire.
+All digital AM radio receiver implemented on the stm32l4-discovery board. All the information is here: 
+https://mightydevices.com/index.php/2020/02/stm32l4-discovery-radio-receiver/
 
-## Principle of operation
-
-TODO
-
-## Makefile
-
-This project can be build using gcc or llvm (clang). This is how the Makefile and the linker script was prepared. Makefile is GNUMake compatible. You can configure all the tools used for building, add sources, libraries, etc..
 
 ## How to build
 
+This project can be build using arm-none-eabi-gcc. This is how the Makefile and the linker script were prepared for. Makefile is GNUMake compatible.
+
 Two things are needed:
 
-* Toolchain that contains C compiler, linker and supporting tools (like objcopy, objdump, nm, size) may be gcc arm embedded toolchain or clang/llvm equivalents with libraries such as libc, libg, libm or whatever you may require
+* Toolchain that contains C compiler, like the one from developer.arm.com
 * GNUMake to 'execute' the Makefile
 
-Building using GCC: 
+If you into dockerization then please read: https://mightydevices.com/index.php/2019/09/stm32-development-env-for-windows-vscode-arm-gcc-toolchain-openocd/
+
+
+Building command: 
 ```
-make TOOLCHAIN=gcc all
+make all
 ```
-Builing using LLVM: 
-```
-make TOOLCHAIN=llvm all
-```
+
+The firmware will be put into `./outs` directory

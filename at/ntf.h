@@ -19,8 +19,8 @@
 /** @{ */
 /** @brief debug notifications */
 #define AT_NTF_MASK_DEBUG                               (0x00000001)
-/** @brief radio data notifications */
-#define AT_NTF_MASK_RADIO_DATA                          (0x00000002)
+/** @brief radio iq samples */
+#define AT_NTF_MASK_RADIO_IQ                            (0x00000002)
 /** @} */
 /** @} */
 
@@ -36,13 +36,6 @@ int ATNtf_Init(void);
  * AT_Poll().
  */
 void ATNtf_Poll(void);
-
-/**
- * @brief This function shall invoke the notification data drainage, which will in
- * turn produce notification strings and try to put them within the output buffer. To
- * be called by the ATRxTx drivers at the end of transmission.
- */
-void ATNtf_DrainData(void);
 
 /**
  * @brief Sets the notification mask, enabling or disabling the notifications on

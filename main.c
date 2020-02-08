@@ -39,6 +39,10 @@
 #define DEBUG
 #include "debug.h"
 
+static int U2(void *ptr)
+{
+    USART2_Send("!RADIO_IQ: napis testowy smaczny i zdrowy\r\n", 43, U2);
+}
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -115,11 +119,13 @@ void Main(void)
     /* test dynamic interrupt levels */
     // TestDynInt_Init();
     
+    // U2(0);
 
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
 		AT_Poll();
+       
 
 
         /* kick the dog counter */

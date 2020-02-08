@@ -34,7 +34,7 @@ static uint8_t *rx_ptr;
 /* buffer size */
 static size_t rx_size, tx_size;
 /* callback */
-static cb_t rx_cb, tx_cb;
+static volatile cb_t rx_cb, tx_cb;
 /* callback arguments */
 static usart2_cbarg_t rx_cb_arg, tx_cb_arg;
 
@@ -129,14 +129,14 @@ static void USART2_USART2IdleIsr(void)
 void USART2_USART2Isr(void)
 {
     /* get status register, mask out unused interrupts */
-    uint32_t sr = USART2->ISR & USART2->CR1 & (USART_ISR_TC | USART_ISR_IDLE);
+    uint32_t sr = USART2->ISR,  cr = USART2->CR1;
 
     /* transfer complete */
-    if (sr & USART_ISR_TC)
+    if ((sr & USART_ISR_TC) && (cr & USART_CR1_TCIE))
         USART2_USART2TransferCompleteIsr();
 
     /* idle state detected */
-    if (sr & USART_ISR_IDLE)
+    if ((sr & USART_ISR_IDLE) && (cr & USART_CR1_IDLEIE))
         USART2_USART2IdleIsr();
 }
 
@@ -173,7 +173,7 @@ int USART2_Init(void)
 	RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
 	/* enable gpiod */
 	RCC->AHB2ENR |= RCC_AHB2ENR_GPIODEN;
-	/* enable usart1 clock */
+	/* enable usart2 clock */
 	RCC->APB1ENR1 |= RCC_APB1ENR1_USART2EN;
 
 	/* reset usart */

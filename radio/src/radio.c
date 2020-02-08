@@ -9,6 +9,7 @@
 
 #include "assert.h"
 #include "err.h"
+#include "at/ntf/radio.h"
 #include "dev/analog.h"
 #include "dev/await.h"
 #include "dev/cs43l22.h"
@@ -118,7 +119,7 @@ static int Radio_JoystickCallback(void *ptr)
     if (ea->status & JOYSTICK_STATUS_LEFT) new_frequency -= frequency_change;
 
     /* sanity limits for the gain : +/- 40dB */
-    new_gain = min(100, max(new_gain, 0.01));
+    new_gain = min(1000, max(new_gain, 0.01));
     /* sanity limits for the frequency: DC to Nyquist */
     new_frequency = min(RF_SAMPLING_FREQ / 2, max(0, new_frequency));
 
@@ -179,8 +180,7 @@ static int Radio_AnalogCallback(void *ptr)
 {
     /* cast event argument */
     analog_evarg_t *ea = ptr;
-
-    /* head/tail adjusted pointers to the ping-pong buffer */
+    /* head/tail adjusted pointers to the ping-pong buffer phase indicator */
     float *i_dec_head = i_dec[ dec_pp], *q_dec_head = q_dec[ dec_pp];
     float *i_dec_tail = i_dec[!dec_pp], *q_dec_tail = q_dec[!dec_pp];
     /* number of samples after the hardware decimator */
@@ -209,11 +209,14 @@ static int Radio_AnalogCallback(void *ptr)
     Dec4_Decimate(i_dec_tail, q_dec_tail, hw_dec_num, i_dec_tail, 
         q_dec_tail);
 
+    /* put the decimated data to the at notifications module */
+    ATNtfRadio_PutIQSamples(i_dec_tail, q_dec_tail, sw_dec_num);
+
     /* filter before demodulation */
-    DemodAM_Filter(i_dec_tail, q_dec_tail, hw_dec_num / 4, i_dec_tail, 
+    DemodAM_Filter(i_dec_tail, q_dec_tail, sw_dec_num, i_dec_tail, 
         q_dec_tail);
     /* demodulate the output data */
-    DemodAM_Demodulate(i_dec_tail, q_dec_tail, hw_dec_num / 4, dem);
+    DemodAM_Demodulate(i_dec_tail, q_dec_tail, sw_dec_num, dem);
 
     /* apply gain */
     FloatScale_Scale(dem, sw_dec_num, set_gain, dem);
