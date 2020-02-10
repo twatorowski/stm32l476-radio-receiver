@@ -52,6 +52,12 @@ void SysTime_Delay(uint32_t ms)
 		Watchdog_Kick();
 }
 
+/* return the system timer value */
+uint32_t SysTime_GetTime(void)
+{
+    return TIM5->CNT;
+}
+
 /* set current time */
 void SysTime_SetTime(uint32_t t)
 {

@@ -228,16 +228,18 @@ static void USB_OTGFSOutEpIsr(void)
 				/* mystery bit set? */
 				if (!(USBFS_OE(0)->DOEPINT & (1 << 15))) {
 					/* not waiting for a setup frame? */
-					if (!o->setup && o->callback)
-						t = o->callback, o->callback = 0, t(&o->offs);
+					if (!o->setup && o->callback) {
+						t = o->callback; o->callback = 0; t(&o->offs);
+                    }
 				}
 				/* make sure to set some other undocumented bits because... why not */
 				USBFS_OE(0)->DOEPINT |= (0x1 << 15) | (0x1 << 5);
 			/* XXX: other core versions */
 			} else {
 				/* not waiting for a setup frame? */
-				if (!o->setup && o->callback)
-					t = o->callback, o->callback = 0, t(&o->offs);
+				if (!o->setup && o->callback) {
+					t = o->callback; o->callback = 0; t(&o->offs);
+                }
 			}
 		}
 
@@ -619,9 +621,17 @@ void USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb)
 	USBFS_OE(ep_num)->DOEPTSIZ &= ~(USB_DOEPTSIZ_XFRSIZ | USB_DOEPTSIZ_PKTCNT);
 	/* program transfer size */
 	USBFS_OE(ep_num)->DOEPTSIZ |= pkt_cnt << LSB(USB_DOEPTSIZ_PKTCNT) | max_size;
+
+    int odd_even = 0;
+    // /* set to ODD/ DATA1 */
+    // if (USBFS_OE(ep_num)->DOEPCTL & USB_DOEPCTL_EONUM) {
+    //     odd_even = USB_DOEPCTL_SD0PID_SEVNFRM;
+    // } else {
+    //     odd_even = USB_DOEPCTL_SD1PID_SODDFRM;
+    // }
 	/* clear nak and enable endpoint for incoming data */
 	USBFS_OE(ep_num)->DOEPCTL = (USBFS_OE(ep_num)->DOEPCTL & ~USB_DOEPCTL_EPDIS) |
-			USB_DOEPCTL_CNAK | USB_DOEPCTL_EPENA;
+			USB_DOEPCTL_CNAK | USB_DOEPCTL_EPENA | odd_even;
 }
 
 /* start setup transfer: size must be a multiple of 8 (setup frame size), use 24 for

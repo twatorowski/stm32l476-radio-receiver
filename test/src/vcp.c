@@ -87,12 +87,12 @@ int TestVCP_Init(void)
 void TestVCP_Poll(void)
 {
 	/* check wakeup timer */
-	if (dtime(time(), timer) < 2000)
+	if (dtime(time(0), timer) < 500)
 		return;
 
 	/* generate notification */
 	if (Sem_Lock(&usbvcptx_sem, CB_NONE) == EOK) {
-		timer = time();
+		timer = time(0);
 		USBVCP_Send("notify", 6, TestVCP_VCPTxCallback);
 	}
 }

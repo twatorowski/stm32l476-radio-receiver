@@ -235,7 +235,8 @@ int USBVCP_Recv(void *ptr, size_t size, cb_t cb)
 	/* need to restart the data reception */
 	} else {
 		/* this shall start the transfer */
-		USB_StartOUTTransfer(USB_EP3, rx_buf_, sizeof(rx_buf_), USBVCP_EpRxCallback);
+		USB_StartOUTTransfer(USB_EP3, rx_buf_, sizeof(rx_buf_), 
+            USBVCP_EpRxCallback);
 	}
 
 	/* interrupt will alter callback address after transfer has finished */

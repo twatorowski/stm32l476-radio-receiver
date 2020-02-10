@@ -107,11 +107,11 @@ int done;
 void TestDACSine_Poll(void)
 {
     /* check timer */
-    if (dtime_past(time(), timer) < 2000)
+    if (dtime(time(0), timer) < 2000)
         return;
 
     /* kick the timer */
-    timer = time();
+    timer = time(0);
     /* start the process by acquiring the lock */
     Sem_Lock(&cs43l22_sem, TestDACSine_EnCallback);
 }
