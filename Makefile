@@ -52,6 +52,9 @@ SRC += ./dev/src/timemeas.c ./dev/src/led.c
 SRC += ./dev/src/invoke.c ./dev/src/lsi.c
 SRC += ./dev/src/dec.c
 
+SRC += ./dev/src/usb.c ./dev/src/usbcore.c
+SRC += ./dev/src/usbdesc.c ./dev/src/usbvcp.c
+
 # digital signal processing
 SRC += ./dsp/src/biquad.c
 
@@ -68,6 +71,7 @@ SRC += ./sys/src/sem.c
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
+SRC += ./test/src/vcp.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

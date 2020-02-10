@@ -27,6 +27,10 @@
 #include "dev/systime.h"
 #include "dev/timemeas.h"
 #include "dev/usart2.h"
+#include "dev/usb.h"
+#include "dev/usbcore.h"
+#include "dev/usbdesc.h"
+#include "dev/usbvcp.h"
 #include "dev/watchdog.h"
 #include "radio/radio.h"
 #include "test/am_radio.h"
@@ -35,14 +39,10 @@
 #include "test/float_fixp.h"
 #include "test/radio.h"
 #include "test/usart2.h"
+#include "test/vcp.h"
 
 #define DEBUG
 #include "debug.h"
-
-static int U2(void *ptr)
-{
-    USART2_Send("!RADIO_IQ: napis testowy smaczny i zdrowy\r\n", 43, U2);
-}
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -89,6 +89,14 @@ void Main(void)
 	SAI1A_Init();
     /* initialize rf input pin */
     RFIn_Init();
+    /* initialize usb */
+	USB_Init();
+	/* initialize usb descriptors */
+	USBDesc_Init();
+	/* initialize core support */
+	USBCore_Init();
+	/* initialize vcp */
+	USBVCP_Init();
 
     /* externals */
     /* led */
@@ -104,7 +112,7 @@ void Main(void)
     AT_Init();
 
     /* initialize the radio receiver logic */
-    Radio_Init();
+    // Radio_Init();
 
     /* tests */
     /* initialize usart2 test */
@@ -119,13 +127,14 @@ void Main(void)
     /* test dynamic interrupt levels */
     // TestDynInt_Init();
     
-    // U2(0);
+    TestVCP_Init();
 
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
 		AT_Poll();
-       
+
+        TestVCP_Poll();
 
 
         /* kick the dog counter */

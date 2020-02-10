@@ -23,6 +23,14 @@ int CpuClock_Init(void)
 	/* configure latency: 4ws */
 	FLASH->ACR |= FLASH_ACR_LATENCY_4WS | FLASH_ACR_PRFTEN;
 
+    /* configure msi oscillator for 48MHz operation */
+	RCC->CR = (RCC->CR & ~RCC_CR_MSIRANGE) | RCC_CR_MSIRANGE_11;
+	/* select msi range configuration */
+	RCC->CR |= RCC_CR_MSIRGSEL;
+
+    /* select the msi as the 48MHz source TODO: */
+    RCC->CCIPR |= RCC_CCIPR_CLK48SEL;
+
 	/* enable crystal oscillator */
 	RCC->CR |= RCC_CR_HSEON | RCC_CR_HSEBYP;
 	/* wait till its enabled */
