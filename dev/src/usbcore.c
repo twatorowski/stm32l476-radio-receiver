@@ -7,7 +7,7 @@
 
 #include <dev/usb.h>
 #include <dev/usbcore.h>
-#include <dev/usbdesc.h>
+#include "dev/usbdesc.h"
 #include "err.h"
 #include <util/minmax.h>
 #include "util/string.h"
@@ -92,7 +92,7 @@ static void USBCore_StartStatusOUTStage(void)
 static int USBCore_DataINCallback(void *arg)
 {
 	/* max frame size */
-	size_t max_size = device_descriptor[7];
+	size_t max_size = usb_device_descriptor[7];
 
 	/* this logic ensures that we send zero-length packet at the end of transfer that
 	 * consists of n * max_size bytes (i.e. no short packets at the end) */
@@ -116,7 +116,7 @@ static int USBCore_DataINCallback(void *arg)
 static void USBCore_StartDataINStage(void *ptr, size_t size)
 {
 	/* max frame size */
-	size_t max_size = device_descriptor[7];
+	size_t max_size = usb_device_descriptor[7];
 	/* store information */
 	ctl_ptr = ptr, ctl_size = size, ctl_offset = 0;
 	/* this shall result in transfer start */
@@ -130,7 +130,7 @@ int cccc;
 static int USBCore_DataOUTCallback(void *ptr)
 {
 	/* max frame size */
-	size_t max_size = device_descriptor[7];
+	size_t max_size = usb_device_descriptor[7];
 	/* extract data size from packet size */
 	size_t size = *(size_t *)ptr;
 
@@ -157,7 +157,7 @@ static int USBCore_DataOUTCallback(void *ptr)
 static void USBCore_StartDataOUTStage(void *ptr, size_t size)
 {
 	/* max frame size */
-	size_t max_size = device_descriptor[7];
+	size_t max_size = usb_device_descriptor[7];
 	/* store information */
 	ctl_ptr = ptr, ctl_size = size, ctl_offset = 0;
 
@@ -207,36 +207,36 @@ static int USBCore_ProcessSetupGetDescriptor(usb_setup_t *s, void **ptr,
 		/* device descriptor was requested */
 		case USB_SETUP_DESCTYPE_DEVICE : {
 			/* set data pointer and size */
-			*ptr = (uint8_t *)device_descriptor;
-			*size = (uint8_t)device_descriptor[0];
+			*ptr = (uint8_t *)usb_device_descriptor;
+			*size = (uint8_t)usb_device_descriptor[0];
 		} break;
 		/* configuration descriptor was requested */
 		case USB_SETUP_DESCTYPE_CONFIGURATION : {
 			/* check if descriptor exists */
-			if (desc_index >= config_descriptors_num) {
+			if (desc_index >= usb_config_descriptors_num) {
 				/* wrong index */
 				break;
 			}
 			/* set data pointer and size */
-			*ptr = (uint8_t *)config_descriptors[desc_index];
-			*size = config_descriptors[desc_index][2] |
-					config_descriptors[desc_index][3] << 8;
+			*ptr = (uint8_t *)usb_config_descriptors[desc_index];
+			*size = usb_config_descriptors[desc_index][2] |
+					usb_config_descriptors[desc_index][3] << 8;
 		} break;
 		/* string descriptor was requested */
 		case USB_SETUP_DESCTYPE_STRING : {
 			/* check if descriptor exists */
-			if (desc_index >= string_descriptors_num) {
+			if (desc_index >= usb_string_descriptors_num) {
 				/* wrong index */
 				break;
 			}
 			/* set data pointer and size */
-			*ptr = (uint8_t *)string_descriptors[desc_index];
-			*size = (uint8_t)string_descriptors[desc_index][0];
+			*ptr = (uint8_t *)usb_string_descriptors[desc_index];
+			*size = (uint8_t)usb_string_descriptors[desc_index][0];
 		} break;
 		/* device qualifier descriptor */
 		case USB_SETUP_DESCTYPE_QUALIFIER : {
-			*ptr = (uint8_t *)qualifier_descriptor;
-			*size = qualifier_descriptor[0];
+			*ptr = (uint8_t *)usb_qualifier_descriptor;
+			*size = usb_qualifier_descriptor[0];
 		} break;
 		/* unknown descriptor */
 		default : {
@@ -324,7 +324,7 @@ static int USBCore_ProcessSetupGetStatus(usb_setup_t *s, void **ptr,
 		/* interface number */
 		uint8_t iface_num = s->index;
 		/* request is supported only in configured state */
-		if (dev.state == USB_DEV_CONFIGURED && iface_num < interfaces_num) {
+		if (dev.state == USB_DEV_CONFIGURED && iface_num < usb_interfaces_num) {
 			/* prepare data in temporary buffer: both zeros */
 			buf[0] = 0; buf[1] = 0;
 			/* prepare transfer */
@@ -340,7 +340,7 @@ static int USBCore_ProcessSetupGetStatus(usb_setup_t *s, void **ptr,
 		/* endpoint 0 can be addressed in address state, all others can be
 		 * addressed in configured state */
 		if ((ep_num == USB_EP0 && dev.state != USB_DEV_DEFAULT) ||
-			 (ep_num > USB_EP0 && ep_num < endpoints_num &&
+			 (ep_num > USB_EP0 && ep_num < usb_endpoints_num &&
 					 dev.state == USB_DEV_CONFIGURED)) {
 			/* get proper endpoint mask */
 			uint8_t ep_halt = ep_dir ? dev.ep_halt_tx : dev.ep_halt_rx;
@@ -377,7 +377,7 @@ static int USBCore_ProcessSetupGetInterface(usb_setup_t *s, void **ptr,
 	/* interface is recipient */
 	if (recipient == USB_SETUP_REQTYPE_RECIPIENT_IFACE) {
 		/* need to be in configured state */
-		if (dev.state == USB_DEV_CONFIGURED && iface_num < interfaces_num) {
+		if (dev.state == USB_DEV_CONFIGURED && iface_num < usb_interfaces_num) {
 			/* prepare data */
 			buf[0] = dev.alternate_settings[iface_num];
 			/* prepare transfer */
@@ -585,7 +585,7 @@ static int USBCore_ProcessSetupClearFeature(usb_setup_t *s)
 		/* endpoint number, endpoint direction */
 		uint8_t ep_num = num & 0x7F, ep_dir = num & 0x80;
 		/* endpoint halt */
-		if (ep_num >= USB_EP1 && ep_num < endpoints_num &&
+		if (ep_num >= USB_EP1 && ep_num < usb_endpoints_num &&
 			feature == USB_SETUP_FEATURE_ENDPOINT_HALT) {
 			/* select mask according to ep_dir */
 			if (ep_dir) {
@@ -638,7 +638,7 @@ static int USBCore_ProcessSetupSetFeature(usb_setup_t *s)
 		/* endpoint number, endpoint direction */
 		uint8_t ep_num = num & 0x7F, ep_dir = num & 0x80;
 		/* endpoint halt */
-		if (ep_num >= USB_EP1 && ep_num < endpoints_num &&
+		if (ep_num >= USB_EP1 && ep_num < usb_endpoints_num &&
 			feature == USB_SETUP_FEATURE_ENDPOINT_HALT) {
 			/* select mask according to ep_dir */
 			if (ep_dir) {
@@ -676,7 +676,7 @@ static int USBCore_ProcessSetupSetInterface(usb_setup_t *s)
 	/* interface is recipient */
 	if (recipient == USB_SETUP_REQTYPE_RECIPIENT_IFACE) {
 		/* need to be in configured state */
-		if (dev.state == USB_DEV_CONFIGURED && iface_num < interfaces_num) {
+		if (dev.state == USB_DEV_CONFIGURED && iface_num < usb_interfaces_num) {
 			/* prepare data */
 			dev.alternate_settings[iface_num] = iface_alt_num;
 			/* status is ok */
@@ -799,7 +799,7 @@ static int USBCore_SetupCallback(void *arg)
 static int USBCore_ResetCallback(void *arg)
 {
 	/* get frame size from device descriptor */
-	size_t max_size = device_descriptor[7];
+	size_t max_size = usb_device_descriptor[7];
 
 	/* prepare reception fifo */
 	USB_SetRxFifoSize(0x80);

@@ -1,8 +1,10 @@
-/*
- * usb.h
- *
- *	Created on: Dec 25, 2016
- *		Author: Tomek
+/**
+ * @file usb.h
+ * 
+ * @date 2019-12-06
+ * @author twatorowski 
+ * 
+ * @brief USB Device driver
  */
 
 #ifndef DEV_USB_H_
@@ -10,9 +12,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <sys/ev.h>
 
-/* enpoint numbers */
+#include "sys/ev.h"
+
+/** @name enpoint numbers */
+/** @{ */
 /* enpoint 0 */
 #define USB_EP0								0x00
 /* enpoint 1 */
@@ -29,54 +33,170 @@
 #define USB_EP6								0x06
 /* enpoint 7 */
 #define USB_EP7								0x07
+/** @} */
 
-/* endpoint types */
+/** @name endpoint types */
+/** @{ */
+/** @brief control endpoint */
 #define USB_EPTYPE_CTL						0x00
+/** @brief isochronous endpoint */
 #define USB_EPTYPE_ISO						0x01
+/** @brief bulk endpoint */
 #define USB_EPTYPE_BULK						0x02
+/** @brief interrupt endpoint */
 #define USB_EPTYPE_INT						0x03
+/** @} */
+
+/** @brief callback argument for StartXXXTransfer functions */
+typedef struct usb_cbarg {
+    /** error code */
+    int error;
+    /** transfer size */
+    size_t size;
+} usb_cbarg_t;
 
 /* system events: reset event */
 extern ev_t usb_rst_ev;
 
-/* initstat */
-#define USB_INITSTAT_OK						0x00000001
 
-/* my interrupt handler */
+/** @brief usb interrupt handler */
 void USB_OTGFSIsr(void);
-/* initialize usb support */
+
+/**
+ * @brief Initialize the USB Device module
+ * 
+ * @return int status (@ref ERR_ERROR_CODES) 
+ */
 int USB_Init(void);
-/* get initialization status */
+
+/**
+ * @brief Returns the microphone initialization status
+ * 
+ * @return int status (@ref ERR_ERROR_CODES) 
+ */
 int USB_GetInitStatus(void);
 
-/* start usb action! */
+/**
+ * @brief Attach/Remove the USB device. To be called when VUSB is 
+ * applied/removed
+ * 
+ * @param enable 1 - enable USB Device, 0 - disable USB Device
+ * 
+ * @return int status (@ref ERR_ERROR_CODES) 
+ */
 int USB_Connect(int enable);
 
-/* set rx fifo size */
+/**
+ * @brief Sets the RX Fifo size which determines the maximal size of the frames 
+ * being received. This shall be configured according to implemented device 
+ * class requirements. Keep in mind that the hardware uses one RX fifo that is 
+ * shared along all OUT endpoints so it should be set to handle biggest transfer 
+ * possible.
+ * 
+ * @param size size expressed in 32-bit words.
+ */
 void USB_SetRxFifoSize(uint32_t size);
-/* set tx fifo size */
+
+/**
+ * @brief Sets the TX Fifo size. Every IN endpoint has it's own tx fifo (nothing 
+ * is shared like in RX Fifo case).
+ * 
+ * @param ep_num endpoint number
+ * @param size fifo size expressed in 32-bit words
+ */
 void USB_SetTxFifoSize(uint32_t ep_num, uint32_t size);
-/* flush tx fifo */
+
+/**
+ * @brief Flushes the TX Fifo associated with given endpoint.
+ * 
+ * @param ep_num endpoint number
+ */
 void USB_FlushTxFifo(uint32_t ep_num);
 
-/* start data transmission */
-void USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb);
-/* start data reception */
-void USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb);
-/* start setup transfer: size must be a multiple of 8 (setup frame size), use 24 for
- * best results since host may issue 3 back to back setup packets */
-void USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb);
+/**
+ * @brief Start the IN transfer (from device to host). Send data pointed by 
+ * 'ptr' of size 'size'. After the work is done callback 'cb' will be called
+ * 
+ * @param ep_num endpoint number
+ * @param ptr data source pointer
+ * @param size size of data 
+ * @param cb callback to be called after the transfer is done
+ * 
+ * @return usb_cbarg_t * null as the CB_SYNC operation is not permitted
+ */
+usb_cbarg_t *  USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, 
+    cb_t cb);
 
-/* configure IN endpoint */
+/**
+ * @brief Start OUT transfer (from host to the device) Data that host whishes 
+ * to provide the device with will be stored under the 'ptr'. Max accepted data 
+ * size is 'size'. After the data is received callback will be called
+ * 
+ * @param ep_num endpoint number
+ * @param ptr pointer to where to store the data
+ * @param size maximal acceptable size of data
+ * @param cb callback to be called after the transfer is done
+ * 
+ * @return usb_cbarg_t * null as the CB_SYNC operation is not permitted
+ */
+usb_cbarg_t *  USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, 
+    cb_t cb);
+
+/**
+ * @brief Start SETUP transfer (from host to device). The size of buffer 
+ * provided must be a multiple of 8. Use 24 as the host is allowed to send 3 
+ * back-to-back setup packets
+ * 
+ * @param ep_num endpoint number
+ * @param ptr pointer to where to store the data
+ * @param size data size (must be a multiple of 8)
+ * @param cb callback to be called after the transfer is done
+ * 
+ * @return usb_cbarg_t * null as the CB_SYNC operation is not permitted
+ */
+usb_cbarg_t *  USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size, 
+    cb_t cb);
+
+/**
+ * @brief Configure IN endpoint. To be called after USB reset event to 
+ * re-initialize the endpoint.
+ * 
+ * @param ep_num endpoint number
+ * @param type type of endpoint (see USB_EPTYPE_ defines)
+ * @param mp_size maximal packet size
+ */
 void USB_ConfigureINEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size);
-/* configure OUT endpoint */
+
+/**
+ * @brief Configure OUT endpoint. To be called after USB reset event to 
+ * re-initialize the endpoint.
+ * 
+ * @param ep_num endpoint number
+ * @param type type of endpoint (see USB_EPTYPE_ defines)
+ * @param mp_size maximal packet size
+ */
 void USB_ConfigureOUTEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size);
 
-/* set device address */
+/**
+ * @brief Set the device addres. To be called during enumeration when host 
+ * assigns the address to the device.
+ * 
+ * @param addr address value
+ */
 void USB_SetDeviceAddress(uint8_t addr);
-/* stall out endpoint */
+
+/**
+ * @brief Stall OUT endpoint. Halt all the transfers.
+ * 
+ * @param ep_num endpoint number
+ */
 void USB_StallOUTEndpoint(uint32_t ep_num);
-/* stall in endpoint */
+
+/**
+ * @brief Stall IN endpoint. Halt all the transfers.
+ * 
+ * @param ep_num ednpoint number
+ */
 void USB_StallINEndpoint(uint32_t ep_num);
 
 

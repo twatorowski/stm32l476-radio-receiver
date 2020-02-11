@@ -71,7 +71,7 @@ SRC += ./sys/src/sem.c
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
-SRC += ./test/src/vcp.c
+SRC += ./test/src/vcp.c ./test/src/vcp_rate.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

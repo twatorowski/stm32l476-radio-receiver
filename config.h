@@ -91,6 +91,8 @@
 #define INT_PRI_EXI10_15                            0xf0
 /** @brief invoke interrupt priority */
 #define INT_PRI_INVOKE                              0x50
+/** @brief USB priority */
+#define INT_PRI_USB                                 0x50
 /** @} */
 
 /** @name USART2 configuration */
@@ -119,6 +121,22 @@
 #define RF_SAMPLING_FREQ                            2500000
 /** @define number of bits per rf sample */
 #define RF_SAMPLING_BITS                            12
+/** @} */
+
+/** @name USB module */
+/** @{ */
+/** @brief use the true serial number */
+#define USB_SN_SIZE                                 58
+/** @brief control endpoint max size (bidirectional) */
+#define USB_CTRLEP_SIZE                             64
+/** @brief transmission packet size (must be a power of 2) */
+#define USB_VCP_TX_SIZE                             256
+/** @brief reception packet size (must be a power of 2) */
+#define USB_VCP_RX_SIZE                             256
+/** @brief usb uses common fifo for reception so we need to set it's size to 
+ * hold the largest packet possible */
+#define USB_RX_FIFO_SIZE                            \
+    max(USB_VCP_RX_SIZE, USB_CTRLEP_SIZE)
 /** @} */
 
 

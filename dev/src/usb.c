@@ -1,29 +1,33 @@
-/*
- * usb2.c
- *
- *	Created on: 07.07.2018
- *		Author: Tomek
+/**
+ * @file usb.c
+ * 
+ * @date 2019-12-06
+ * @author twatorowski 
+ * 
+ * @brief USB Physical driver
  */
 
-#include <dev/cpuclock.h>
-#include <dev/systime.h>
-#include <dev/usb.h>
-#include <dev/usbdesc.h>
-#include <stdint.h>
-#include <stm32l476/rcc.h>
-#include <stm32l476/gpio.h>
-#include <stm32l476/flash.h>
-#include <stm32l476/pwr.h>
-#include <stm32l476/usb.h>
-#include <stm32l476/nvic.h>
-#include <sys/atomic.h>
-#include <sys/critical.h>
+#include "assert.h"
 #include "err.h"
-#include <util/msblsb.h>
-#include <util/minmax.h>
+#include "dev/cpuclock.h"
+#include "dev/systime.h"
+#include "dev/usb.h"
+#include "dev/usbdesc.h"
+#include "stdint.h"
+#include "stm32l476/rcc.h"
+#include "stm32l476/gpio.h"
+#include "stm32l476/flash.h"
+#include "stm32l476/pwr.h"
+#include "stm32l476/usb.h"
+#include "stm32l476/nvic.h"
+#include "sys/atomic.h"
+#include "sys/critical.h"
+#include "sys/ev.h"
+#include "util/msblsb.h"
+#include "util/minmax.h"
 #include "util/string.h"
 
-//#define DEBUG
+#define DEBUG
 #include "debug.h"
 
 /* system events: reset event */
@@ -36,7 +40,7 @@ typedef struct {
 	/* current transfer size */
 	size_t size, offs;
 	/* transfer callback */
-	cb_t callback;
+	volatile cb_t callback;
 } usb_epin_t;
 
 /* in/out endpoint related stuff */
@@ -47,7 +51,7 @@ typedef struct {
 	/* current transfer size */
 	size_t size, offs;
 	/* transfer callback */
-	cb_t callback;
+	volatile cb_t callback;
 } usb_epout_t;
 /* in endpoints */
 static usb_epin_t in[4];
@@ -86,7 +90,7 @@ static size_t USB_ReadPacket(void *ptr, size_t size)
 }
 
 /* write usb packet */
-static size_t USB_WritePacket(uint32_t ep_num, const void *ptr, size_t size)
+static size_t USB_WritePacket(int ep_num, const void *ptr, size_t size)
 {
 	/* data pointer */
 	const uint8_t *p = ptr; size_t sz;
@@ -206,7 +210,6 @@ static void USB_OTGFSOutEpIsr(void)
 	/* out endpoint pointer */
 	usb_epout_t *o = out; cb_t t;
 
-
 	/* process */
 	for (ep_num = 0; irq; ep_num++, irq >>= 1, o++) {
 		/* endpoint did not raise the interrupt? */
@@ -222,31 +225,41 @@ static void USB_OTGFSOutEpIsr(void)
 			USBFS_OE(ep_num)->DOEPINT = USB_DOEPINT_XFRC;
 			/* XXX: an important note here: this OTG_FS core exists in different
 			 * revisions among the whole product range and there is a twist (an
-			 * undocumented one, obviously... ;-( )to the processing of the messages
-			 * to every each of them, the following routine is for ver. 310a */
+			 * undocumented one, obviously... ;-( )to the processing of the 
+             * messages to every each of them, the following routine is for 
+             * ver. 310a */
 			if (USBFS->GSNPSID == USB_OTG_CORE_ID_310A) {
 				/* mystery bit set? */
 				if (!(USBFS_OE(0)->DOEPINT & (1 << 15))) {
 					/* not waiting for a setup frame? */
 					if (!o->setup && o->callback) {
-						t = o->callback; o->callback = 0; t(&o->offs);
+                        /* build up the event argument */
+                        usb_cbarg_t arg = { .error = EOK, .size = o->offs };
+                        /* call the callback */
+                        t = o->callback, o->callback = 0, t(&arg);
                     }
 				}
-				/* make sure to set some other undocumented bits because... why not */
+				/* make sure to set some other undocumented bits because... 
+                 * why not */
 				USBFS_OE(0)->DOEPINT |= (0x1 << 15) | (0x1 << 5);
 			/* XXX: other core versions */
 			} else {
 				/* not waiting for a setup frame? */
 				if (!o->setup && o->callback) {
-					t = o->callback; o->callback = 0; t(&o->offs);
+                    /* build up the event argument */
+                    usb_cbarg_t arg = { .error = EOK, .size = o->offs };
+                    /* call the callback */
+					t = o->callback, o->callback = 0, t(&arg);
                 }
 			}
 		}
 
 		/* setup transaction done? */
 		if (ep_irq & USB_DOEPINT_STUP) {
+            /* build up the event argument */
+            usb_cbarg_t arg = { .error = EOK, .size = o->offs };
 			/* call callback */
-			o->callback(&o->offs); o->setup = 0;
+			o->callback(&arg); o->setup = 0;
 			/* clear flag */
 			USBFS_OE(ep_num)->DOEPINT = USB_DOEPINT_STUP;
 		}
@@ -272,21 +285,25 @@ static void USB_OTGFSInEpIsr(void)
 		if (!(irq & 1))
 			continue;
 		/* read endpoint specific interrupt */
-		ep_irq = USBFS_IE(ep_num)->DIEPINT & (USBFS->DIEPMSK | USB_DIEPINT_TXFE);
+		ep_irq = USBFS_IE(ep_num)->DIEPINT & 
+            (USBFS->DIEPMSK | USB_DIEPINT_TXFE);
 		/* check if fifo empty is masked away */
 		if (!(fe & 1))
 			ep_irq &= ~USB_DIEPINT_TXFE;
 
 		/* transfer complete? */
 		if ((ep_irq & USB_DIEPINT_XFRC) && i->callback) {
-			t = i->callback, i->callback = 0;
-			t(&i->offs);
-		}
+            /* build up the event argument */
+            usb_cbarg_t arg = { .error = EOK, .size = i->offs };
+            /* call the callback */
+			t = i->callback, i->callback = 0, t(&arg);
+        }
 
 		/* fifo empty? */
 		if (ep_irq & USB_DIEPINT_TXFE) {
 			/* store packet */
-			i->offs += USB_WritePacket(ep_num, i->ptr + i->offs, i->size - i->offs);
+			i->offs += USB_WritePacket(ep_num, i->ptr + i->offs, 
+                i->size - i->offs);
 			/* update offset & mask out fifo empty interrupt */
 			if (i->size <= i->offs)
 				i->offs = i->size, USBFS->DIEPEMPMSK &= ~fe_bit;
@@ -304,7 +321,7 @@ void USB_OTGFSIsr(void)
 	uint32_t irq = USBFS->GINTSTS & USBFS->GINTMSK;
 
 	/* display interrupt information */
-	dprintf("irq = %08x\n", irq);
+	// dprintf("irq = %08x\n", irq);
 
 	/* invalid interrupt? */
 	if (!irq)
@@ -364,13 +381,12 @@ int USB_Init(void)
 	GPIOA->MODER |= GPIO_MODER_MODER11_1 | GPIO_MODER_MODER12_1;
 
 	/* set priority */
-	NVIC_SETINTPRI(STM32_INT_OTG_FS, 0x50);
+	NVIC_SETINTPRI(STM32_INT_OTG_FS, INT_PRI_USB);
 	/* enable interrupt */
 	NVIC_ENABLEINT(STM32_INT_OTG_FS);
 
 	/* mark usb supply as valid */
 	PWR->CR2 |= PWR_CR2_USV;
-
 
 	/* disable the interrupts */
 	USBFS->GAHBCFG &= ~USB_GAHBCFG_GINTMASK;
@@ -478,7 +494,7 @@ int USB_Init(void)
 	GPIOA->MODER |= GPIO_MODER_MODER11 | GPIO_MODER_MODER12;
 
 	/* update initialization flag */
-	init = USB_INITSTAT_OK;
+	init = EOK;
 	/* exit critical section */
 	Critical_Exit();
 
@@ -499,7 +515,8 @@ int USB_Connect(int enable)
 	/* connect the device */
 	if (enable) {
 		/* enable alternate function */
-		Atomic_AND(~(GPIO_MODER_MODER11_0 | GPIO_MODER_MODER12_0), &GPIOA->MODER);
+		Atomic_AND32((void *)&GPIOA->MODER, 
+            ~(GPIO_MODER_MODER11_0 | GPIO_MODER_MODER12_0));
 		/* start the host clock modules */
 		USBFS->PCGCCTL &= ~(USB_PCGCCTL_GATECLK | USB_PCGCCTL_STOPCLK);
 
@@ -520,7 +537,8 @@ int USB_Connect(int enable)
 		/* stop the host clock modules */
 		USBFS->PCGCCTL |= USB_PCGCCTL_GATECLK;
 		/* diable alternate function */
-		Atomic_OR(GPIO_MODER_MODER11 | GPIO_MODER_MODER12, &GPIOA->MODER);
+		Atomic_OR32((void *)&GPIOA->MODER, 
+            GPIO_MODER_MODER11 | GPIO_MODER_MODER12);
 	}
 
 	/* report status */
@@ -565,15 +583,17 @@ void USB_FlushTxFifo(uint32_t ep_num)
 	while ((USBFS->GRSTCTL & USB_GRSTCTL_TXFFLSH) != 0);
 }
 
-
 /* start data transmission */
-void USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb)
+usb_cbarg_t * USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, 
+    cb_t cb)
 {
 	/* endpoint pointer */
 	usb_epin_t *ep = &in[ep_num];
 	/* single packet max size, packet count */
 	uint32_t max_size, pkt_cnt;
 
+    /* sanity check */
+    assert(cb != CB_SYNC, "usb: sync operation not permitted", ep_num);
 	/* store pointer and size and operation finished callback */
 	ep->ptr = ptr, ep->size = size, ep->offs = 0, ep->callback = cb;
 
@@ -592,22 +612,30 @@ void USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb)
 	/* enable fifo tx empty interrupt for this endpoint */
 	if (size)
 		USBFS->DIEPEMPMSK |= 1 << ep_num;
-	/* enable endpoint and clear nak condition: this shall result in tx fifo empty
-	 * interrupt during which data will be stored in fifo */
-	USBFS_IE(ep_num)->DIEPCTL = (USBFS_IE(ep_num)->DIEPCTL & ~USB_DIEPCTL_EPDIS) |
-			USB_DIEPCTL_CNAK | USB_DIEPCTL_EPENA;
+	/* enable endpoint and clear nak condition: this shall result in tx fifo 
+     * empty interrupt during which data will be stored in fifo */
+	USBFS_IE(ep_num)->DIEPCTL = 
+        (USBFS_IE(ep_num)->DIEPCTL & ~USB_DIEPCTL_EPDIS) |
+		USB_DIEPCTL_CNAK | USB_DIEPCTL_EPENA;
+
+    /* always returns 0, no sync operation possible */
+    return 0;
 }
 
 /* start data reception */
-void USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb)
+usb_cbarg_t * USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, 
+    cb_t cb)
 {
 	/* endpoint pointer */
 	usb_epout_t *ep = &out[ep_num];
 	/* single packet max size, packet count */
 	uint32_t max_size, pkt_cnt;
 
+    /* sanity check */
+    assert(cb != CB_SYNC, "usb: sync operation not permitted", ep_num);
 	/* store pointer and size and operation finished callback */
-	ep->ptr = ptr, ep->size = size, ep->offs = 0, ep->setup = 0, ep->callback = cb;
+	ep->ptr = ptr, ep->size = size, ep->offs = 0, ep->setup = 0;
+    ep->callback = cb;
 
 	/* get single packet max. size */
 	max_size = USBFS_OE(ep_num)->DOEPCTL & USB_DOEPCTL_MPSIZ;
@@ -620,32 +648,36 @@ void USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb)
 	/* clear size and packet count setting */
 	USBFS_OE(ep_num)->DOEPTSIZ &= ~(USB_DOEPTSIZ_XFRSIZ | USB_DOEPTSIZ_PKTCNT);
 	/* program transfer size */
-	USBFS_OE(ep_num)->DOEPTSIZ |= pkt_cnt << LSB(USB_DOEPTSIZ_PKTCNT) | max_size;
-
-    int odd_even = 0;
-    // /* set to ODD/ DATA1 */
-    // if (USBFS_OE(ep_num)->DOEPCTL & USB_DOEPCTL_EONUM) {
-    //     odd_even = USB_DOEPCTL_SD0PID_SEVNFRM;
-    // } else {
-    //     odd_even = USB_DOEPCTL_SD1PID_SODDFRM;
-    // }
+	USBFS_OE(ep_num)->DOEPTSIZ |= 
+        pkt_cnt << LSB(USB_DOEPTSIZ_PKTCNT) | max_size;
 	/* clear nak and enable endpoint for incoming data */
-	USBFS_OE(ep_num)->DOEPCTL = (USBFS_OE(ep_num)->DOEPCTL & ~USB_DOEPCTL_EPDIS) |
-			USB_DOEPCTL_CNAK | USB_DOEPCTL_EPENA | odd_even;
+	USBFS_OE(ep_num)->DOEPCTL = 
+        (USBFS_OE(ep_num)->DOEPCTL & ~USB_DOEPCTL_EPDIS) |
+		USB_DOEPCTL_CNAK | USB_DOEPCTL_EPENA;
+    
+    /* always returns 0, no sync operation possible */
+    return 0;
 }
 
-/* start setup transfer: size must be a multiple of 8 (setup frame size), use 24 for
- * best results since host may issue 3 back to back setup packets */
-void USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size, cb_t cb)
+/* start setup transfer: size must be a multiple of 8 (setup frame size), use 
+ * 24 for best results since host may issue 3 back to back setup packets */
+usb_cbarg_t * USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size, 
+    cb_t cb)
 {
 	/* endpoint pointer */
 	usb_epout_t *ep = &out[ep_num];
+
+    /* sanity check */
+    assert(cb != CB_SYNC, "usb: sync operation not permitted", ep_num);
 	/* store pointer and size and operation finished callback */
-	ep->ptr = ptr, ep->size = size, ep->offs = 0, ep->setup = 1, ep->callback = cb;
+	ep->ptr = ptr, ep->size = size, ep->offs = 0, ep->setup = 1;
+    ep->callback = cb;
 
 	/* prepare size register: accept 3 packets */
 	USBFS_OE(ep_num)->DOEPTSIZ = 3 * 8 | 1 << LSB(USB_DOEPTSIZ0_PKTCNT) |
 			3 << LSB(USB_DOEPTSIZ0_STUPCNT);
+    /* always returns 0, no sync operation possible */
+    return 0;
 }
 
 /* configure IN endpoint and activate it */
@@ -659,9 +691,11 @@ void USB_ConfigureINEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size)
 		mp_size = (mp_size == 8) ? 0x3 : (mp_size == 16) ? 0x2 :
 				  (mp_size == 32) ? 0x1 : 0x0;
 	/* write back */
-	USBFS_IE(ep_num)->DIEPCTL = temp | type << LSB(USB_DIEPCTL_EPTYP) |
-			mp_size << LSB(USB_DIEPCTL_MPSIZ) | ep_num << LSB(USB_DIEPCTL_TXFNUM) |
-			USB_DIEPCTL_USBAEP | USB_DIEPCTL_SD0PID_SEVNFRM;
+	USBFS_IE(ep_num)->DIEPCTL = temp | 
+        type << LSB(USB_DIEPCTL_EPTYP) |
+		mp_size << LSB(USB_DIEPCTL_MPSIZ) | 
+        ep_num << LSB(USB_DIEPCTL_TXFNUM) |
+		USB_DIEPCTL_USBAEP | USB_DIEPCTL_SD0PID_SEVNFRM;
 
 	/* enable interrupt generation */
 	USBFS->DAINTMSK |= 1 << (ep_num + LSB(USB_DAINTMSK_IEPM));

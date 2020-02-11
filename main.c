@@ -40,6 +40,7 @@
 #include "test/radio.h"
 #include "test/usart2.h"
 #include "test/vcp.h"
+#include "test/vcp_rate.h"
 
 #define DEBUG
 #include "debug.h"
@@ -127,14 +128,15 @@ void Main(void)
     /* test dynamic interrupt levels */
     // TestDynInt_Init();
     
-    TestVCP_Init();
+    // TestVCP_Init();
+    TestVCPRate_Init();
 
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
 		AT_Poll();
 
-        TestVCP_Poll();
+        // TestVCP_Poll();
 
 
         /* kick the dog counter */
