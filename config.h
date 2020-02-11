@@ -129,6 +129,8 @@
 #define USB_SN_SIZE                                 58
 /** @brief control endpoint max size (bidirectional) */
 #define USB_CTRLEP_SIZE                             64
+/** @brief interrupt endpoint transfer size (must be a power of 2) */
+#define USB_VCP_INT_SIZE                            8
 /** @brief transmission packet size (must be a power of 2) */
 #define USB_VCP_TX_SIZE                             256
 /** @brief reception packet size (must be a power of 2) */

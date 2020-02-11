@@ -13,17 +13,29 @@
 #include "util/elems.h"
 
 /* USB Configuration Descriptor */
-static const uint8_t usb_config0_descriptor[0x43] = {
-    /* Configuration Descriptor*/
+static const uint8_t usb_config0_descriptor[0x4B] = {
+    /* Configuration Descriptor */
     0x09,			/* bLength: Configuration Descriptor size */
     0x02,			/* bDescriptorType: Configuration */
-    0x43, 0x00, 	/* wTotalLength: no of returned bytes */
+    0x4B, 0x00, 	/* wTotalLength: no of returned bytes TODO: */
     0x02,			/* bNumInterfaces: 2 interfaces */
     0x01,			/* bConfigurationValue: Configuration value */
     0x00,			/* iConfiguration: Index of string descriptor describing
                         the configuration */
     0xC0,			/* bmAttributes: self powered */
-    0x32,			/* MaxPower 0 mA */
+    0x32,			/* MaxPower 100 mA */
+
+    /* FIRST FUNCTION */
+
+    /* Interface Association Descriptor */
+    0x08,			/* bLength: Interface Descriptor size */
+    0x0B,			/* bDescriptorType: IAD */
+    0x00,			/* bFirstInterface */
+    0x02,			/* bInterfaceCount */
+    0x02,			/* bFunctionClass: CDC */
+    0x02,			/* bFunctionSubClass */
+    0x01,			/* bFunctionProtocol */
+    0x00,			/* iFunction */
 
     /* Interface Descriptor */
     0x09,			/* bLength: Interface Descriptor size */
@@ -63,7 +75,7 @@ static const uint8_t usb_config0_descriptor[0x43] = {
                         desc */
     0x02,			/* bmCapabilities */
 
-    /* Endpoint 1 Descriptor */
+    /* Endpoint 1 IN Descriptor */
     0x07,			/* bLength: Endpoint Descriptor size */
     0x05,			/* bDescriptorType: Endpoint */
     0x81,			/* bEndpointAddress: (IN1) */
@@ -82,7 +94,7 @@ static const uint8_t usb_config0_descriptor[0x43] = {
     0x00,			/* bInterfaceProtocol: */
     0x00,			/* iInterface: */
 
-    /* Endpoint 2 Descriptor */
+    /* Endpoint 2 IN Descriptor */
     0x07,			/* bLength: Endpoint Descriptor size */
     0x05,			/* bDescriptorType: Endpoint */
     0x82,			/* bEndpointAddress: (IN2) */
@@ -91,10 +103,10 @@ static const uint8_t usb_config0_descriptor[0x43] = {
     USB_VCP_RX_SIZE & 0xff, USB_VCP_RX_SIZE >> 8,
     0x00,			/* bInterval: ignore for Bulk transfer */
 
-    /* Endpoint 3 Descriptor */
+    /* Endpoint 2 OUT Descriptor */
     0x07,			/* bLength: Endpoint Descriptor size */
     0x05,			/* bDescriptorType: Endpoint */
-    0x03,			/* bEndpointAddress: (OUT3) */
+    0x02,			/* bEndpointAddress: (OUT2) */
     0x02,			/* bmAttributes: Bulk */
     /* wMaxPacketSize: */
     USB_VCP_TX_SIZE & 0xff, USB_VCP_TX_SIZE >> 8,

@@ -128,8 +128,8 @@ void Main(void)
     /* test dynamic interrupt levels */
     // TestDynInt_Init();
     
-    // TestVCP_Init();
-    TestVCPRate_Init();
+    TestVCP_Init();
+    // TestVCPRate_Init();
 
 	/* execution loop */
     while (1) {
