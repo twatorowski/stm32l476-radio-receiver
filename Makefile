@@ -8,7 +8,7 @@ LD_SCRIPT = stm32l476rgt6.ld
 
 # ----------------------- OPTIMIZATION LEVEL ------------------------
 # use '-O0' (no optimization) for debugging or (-Os) for release
-OPT_LEVEL = -Os
+OPT_LEVEL = -O0
 
 # -------------------------- VERSION NUMBER -------------------------
 # software version
@@ -54,6 +54,7 @@ SRC += ./dev/src/dec.c
 
 SRC += ./dev/src/usb.c ./dev/src/usbcore.c
 SRC += ./dev/src/usbdesc.c ./dev/src/usbvcp.c
+SRC += ./dev/src/usbvcp2.c
 
 # digital signal processing
 SRC += ./dsp/src/biquad.c
@@ -72,6 +73,7 @@ SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
 SRC += ./test/src/vcp.c ./test/src/vcp_rate.c
+SRC += ./test/src/vcp2.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

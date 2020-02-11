@@ -31,6 +31,7 @@
 #include "dev/usbcore.h"
 #include "dev/usbdesc.h"
 #include "dev/usbvcp.h"
+#include "dev/usbvcp2.h"
 #include "dev/watchdog.h"
 #include "radio/radio.h"
 #include "test/am_radio.h"
@@ -40,10 +41,18 @@
 #include "test/radio.h"
 #include "test/usart2.h"
 #include "test/vcp.h"
+#include "test/vcp2.h"
 #include "test/vcp_rate.h"
 
 #define DEBUG
 #include "debug.h"
+
+char test[10];
+
+static int te(void *ptr)
+{
+    return 0;
+}
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -98,6 +107,7 @@ void Main(void)
 	USBCore_Init();
 	/* initialize vcp */
 	USBVCP_Init();
+    USBVCP2_Init();
 
     /* externals */
     /* led */
@@ -128,7 +138,12 @@ void Main(void)
     /* test dynamic interrupt levels */
     // TestDynInt_Init();
     
+        /* start usb action */
+    USB_Connect(1);
     TestVCP_Init();
+    TestVCP2_Init();
+
+    // USBVCP2_Recv(test, 10, te);
     // TestVCPRate_Init();
 
 	/* execution loop */

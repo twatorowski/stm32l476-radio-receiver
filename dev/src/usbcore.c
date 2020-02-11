@@ -12,7 +12,7 @@
 #include <util/minmax.h>
 #include "util/string.h"
 
-//#define DEBUG
+#define DEBUG
 #include "debug.h"
 
 /* core events */
@@ -92,7 +92,7 @@ static void USBCore_StartStatusOUTStage(void)
 static int USBCore_DataINCallback(void *arg)
 {
 	/* max frame size */
-	size_t max_size = usb_device_descriptor[7];
+	size_t max_size = USB_CTRLEP_SIZE;
 
 	/* this logic ensures that we send zero-length packet at the end of transfer that
 	 * consists of n * max_size bytes (i.e. no short packets at the end) */
@@ -116,21 +116,23 @@ static int USBCore_DataINCallback(void *arg)
 static void USBCore_StartDataINStage(void *ptr, size_t size)
 {
 	/* max frame size */
-	size_t max_size = usb_device_descriptor[7];
+	size_t max_size = USB_CTRLEP_SIZE;
 	/* store information */
 	ctl_ptr = ptr, ctl_size = size, ctl_offset = 0;
 	/* this shall result in transfer start */
 	USB_StartINTransfer(USB_EP0, ctl_ptr, min(max_size, ctl_size),
 			USBCore_DataINCallback);
-	/* we shall enable reception to listen to status out frames that end transfer */
+    // TODO:
+	/* we shall enable reception to listen to status out frames that end 
+     * transfer */
 	USB_StartOUTTransfer(USB_EP0, 0, 0, USBCore_StatusOUTCallback);
 }
-int cccc;
+
 /* continue data out */
 static int USBCore_DataOUTCallback(void *ptr)
 {
 	/* max frame size */
-	size_t max_size = usb_device_descriptor[7];
+	size_t max_size = USB_CTRLEP_SIZE;
 	/* extract data size from packet size */
 	size_t size = *(size_t *)ptr;
 
@@ -157,7 +159,7 @@ static int USBCore_DataOUTCallback(void *ptr)
 static void USBCore_StartDataOUTStage(void *ptr, size_t size)
 {
 	/* max frame size */
-	size_t max_size = usb_device_descriptor[7];
+	size_t max_size = USB_CTRLEP_SIZE;
 	/* store information */
 	ctl_ptr = ptr, ctl_size = size, ctl_offset = 0;
 
@@ -757,7 +759,6 @@ static void USBCore_ProcessSetupNoData(usb_setup_t *s)
 		USBCore_AbortStage();
 	}
 }
-int ccc;
 /* process setup frame */
 static void USBCore_ProcessSetup(usb_setup_t *s)
 {
@@ -799,12 +800,12 @@ static int USBCore_SetupCallback(void *arg)
 static int USBCore_ResetCallback(void *arg)
 {
 	/* get frame size from device descriptor */
-	size_t max_size = usb_device_descriptor[7];
+	size_t max_size = USB_CTRLEP_SIZE;
 
 	/* prepare reception fifo */
-	USB_SetRxFifoSize(0x80);
+	USB_SetRxFifoSize(USB_RX_FIFO_SIZE / 4);
 	/* prepare transmission fifo */
-	USB_SetTxFifoSize(USB_EP0, 0x40);
+	USB_SetTxFifoSize(USB_EP0, USB_CTRLEP_SIZE / 4);
 
 	/* reset device state */
 	memset(&dev, 0, sizeof(dev));

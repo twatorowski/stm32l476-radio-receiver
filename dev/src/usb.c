@@ -54,9 +54,9 @@ typedef struct {
 	volatile cb_t callback;
 } usb_epout_t;
 /* in endpoints */
-static usb_epin_t in[4];
+static usb_epin_t in[6];
 /* out/control endpoints */
-static usb_epout_t out[4];
+static usb_epout_t out[6];
 /* initialization mask */
 static int init;
 
@@ -545,9 +545,12 @@ int USB_Connect(int enable)
 	return EOK;
 }
 
-/* set rx fifo size */
+/* set rx fifo size in 32 bit words */
 void USB_SetRxFifoSize(uint32_t size)
 {
+    /* minimal fifo length allowed */
+    if (size < 16)
+        size = 16;
 	/* set rx fifo size */
 	USBFS->GRXFSIZ = size;
 }
@@ -555,22 +558,26 @@ void USB_SetRxFifoSize(uint32_t size)
 /* set tx fifo size */
 void USB_SetTxFifoSize(uint32_t ep_num, uint32_t size)
 {
-	/* fifo offset */
-	uint32_t offset = USBFS->GRXFSIZ;
+    /* fifo offset */
+    uint32_t offset = USBFS->GRXFSIZ;
 
-	/* endpoint 0 */
-	if (ep_num == 0) {
-		USBFS->DIEPTXF0_HNPTXFSIZ = size << LSB(USB_DIEPTXF_INEPTXFD) | offset;
-	/* other endpoints */
-	} else {
-		/* get offset from ep0 */
-		offset += USBFS->DIEPTXF0_HNPTXFSIZ >> LSB(USB_DIEPTXF_INEPTXFD);
-		/* get offset from other endpoints */
-		for (uint32_t i = 1; i < ep_num; i++)
-			offset += USBFS->DIEPTXF[i - 1] >> LSB(USB_DIEPTXF_INEPTXFD);
-		/* store */
-		USBFS->DIEPTXF[ep_num - 1] = size << LSB(USB_DIEPTXF_INEPTXFD) | offset;
-	}
+    /* minimal fifo length allowed */
+    if (size < 16)
+        size = 16;
+
+    /* endpoint 0 */
+    if (ep_num == 0) {
+        USBFS->DIEPTXF0_HNPTXFSIZ = size << LSB(USB_DIEPTXF_INEPTXFD) | offset;
+    /* other endpoints */
+    } else {
+        /* get offset from ep0 */
+        offset += USBFS->DIEPTXF0_HNPTXFSIZ >> LSB(USB_DIEPTXF_INEPTXFD);
+        /* get offset from other endpoints */
+        for (uint32_t i = 1; i < ep_num; i++)
+            offset += USBFS->DIEPTXF[i - 1] >> LSB(USB_DIEPTXF_INEPTXFD);
+        /* store */
+        USBFS->DIEPTXF[ep_num - 1] = size << LSB(USB_DIEPTXF_INEPTXFD) | offset;
+    }
 }
 
 /* flush tx fifo */
