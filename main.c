@@ -106,8 +106,8 @@ void Main(void)
 	/* initialize core support */
 	USBCore_Init();
 	/* initialize vcp */
-	USBVCP_Init();
-    USBVCP2_Init();
+	// USBVCP_Init();
+    // USBVCP2_Init();
 
     /* externals */
     /* led */
@@ -140,8 +140,8 @@ void Main(void)
     
         /* start usb action */
     USB_Connect(1);
-    TestVCP_Init();
-    TestVCP2_Init();
+    // TestVCP_Init();
+    // TestVCP2_Init();
 
     // USBVCP2_Recv(test, 10, te);
     // TestVCPRate_Init();
