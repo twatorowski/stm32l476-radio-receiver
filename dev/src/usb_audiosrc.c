@@ -24,27 +24,45 @@
 #define MODE_STEREO                 2
 
 /* example samples buffer */
-static uint16_t buf_mono[] = {
-    0x0000, 0x30fb, 0x5a81, 0x7640, 0x7fff, 0x7640, 0x5a81, 0x30fb,
-    0x0000, 0xcf05, 0xa57f, 0x89c0, 0x8001, 0x89c0, 0xa57f, 0xcf05,
-};
-static uint16_t buf_stereo[] = {
-    0x0000, 0x0000, 0x30fb, 0x0000, 0x5a81, 0x0000, 0x7640, 0x0000, 
-    0x7fff, 0x0000, 0x7640, 0x0000, 0x5a81, 0x0000, 0x30fb, 0x0000,
-    0x0000, 0x0000, 0xcf05, 0x0000, 0xa57f, 0x0000, 0x89c0, 0x0000, 
-    0x8001, 0x0000, 0x89c0, 0x0000, 0xa57f, 0x0000, 0xcf05, 0x0000
+static const uint32_t buf[] = {
+    0x00000000, 0x085f2136, 0x10b5150f, 0x18f8b83c,
+    0x2120fb82, 0x2924edab, 0x30fbc54c, 0x389cea71,
+    0x3fffffff, 0x471cece6, 0x4debe4fd, 0x54657193,
+    0x5a827999, 0x603c496b, 0x658c9a2c, 0x6a6d98a3,
+    0x6ed9eba0, 0x72ccb9d9, 0x7641af3b, 0x793501a7,
+    0x7ba3751c, 0x7d8a5f3e, 0x7ee7aa4a, 0x7fb9d757,
+    0x7fffffff, 0x7fb9d757, 0x7ee7aa4a, 0x7d8a5f3e,
+    0x7ba3751c, 0x793501a7, 0x7641af3b, 0x72ccb9d9,
+    0x6ed9eba0, 0x6a6d98a3, 0x658c9a2c, 0x603c496b,
+    0x5a827999, 0x54657193, 0x4debe4fd, 0x471cece6,
+    0x3fffffff, 0x389cea71, 0x30fbc54c, 0x2924edab,
+    0x2120fb82, 0x18f8b83c, 0x10b5150f, 0x085f2136,
+    0x00000000, 0xf7a0deca, 0xef4aeaf1, 0xe70747c4,
+    0xdedf047e, 0xd6db1255, 0xcf043ab4, 0xc763158f,
+    0xc0000001, 0xb8e3131a, 0xb2141b03, 0xab9a8e6d,
+    0xa57d8667, 0x9fc3b695, 0x9a7365d4, 0x9592675d,
+    0x91261460, 0x8d334627, 0x89be50c5, 0x86cafe59,
+    0x845c8ae4, 0x8275a0c2, 0x811855b6, 0x804628a9,
+    0x80000001, 0x804628a9, 0x811855b6, 0x8275a0c2,
+    0x845c8ae4, 0x86cafe59, 0x89be50c5, 0x8d334627,
+    0x91261460, 0x9592675d, 0x9a7365d4, 0x9fc3b695,
+    0xa57d8667, 0xab9a8e6d, 0xb2141b03, 0xb8e3131a,
+    0xc0000001, 0xc763158f, 0xcf043ab4, 0xd6db1255,
+    0xdedf047e, 0xe70747c4, 0xef4aeaf1, 0xf7a0deca,
 };
 /* interface opened? */
 static int mode;
 
 /* data transfer complete callback */
 static int USBAudioSrc_EpTxCallback(void *arg)
-{
-    uint16_t *buf = mode == MODE_STEREO ? buf_stereo : buf_mono;
-    size_t size = mode == MODE_STEREO ? sizeof(buf_stereo) : sizeof(buf_mono);
-
+{   
+    /* transfer size */
+    size_t size = USB_AUDIO_SRC_STEREO_SIZE;
+    /* transmit half of the data in mono mode */
+    if (mode == MODE_MONO)
+        size = USB_AUDIO_SRC_MONO_SIZE;
     /* send buffer contents */
-    USB_StartINTransfer(USB_EP1, buf, size, USBAudioSrc_EpTxCallback);
+    USB_StartINTransfer(USB_EP1, (void *)buf, size, USBAudioSrc_EpTxCallback);
     /* report status */
     return EOK;
 }
@@ -99,11 +117,11 @@ static int USBAudioSrc_ResetCallback(void *arg)
 {
 	/* prepare fifos */
     /* interrupt transfers */
-	USB_SetTxFifoSize(USB_EP1, USB_AU_SRC_SIZE / 4);
+	USB_SetTxFifoSize(USB_EP1, USB_AUDIO_SRC_STEREO_SIZE / 4);
 	/* flush fifos */
 	USB_FlushTxFifo(USB_EP1);
 	/* configure endpoints */
-	USB_ConfigureINEndpoint(USB_EP1, USB_EPTYPE_ISO, USB_AU_SRC_SIZE);
+	USB_ConfigureINEndpoint(USB_EP1, USB_EPTYPE_ISO, USB_AUDIO_SRC_STEREO_SIZE);
 
     /* report status callback */
     return EOK;

@@ -122,11 +122,15 @@ static const uint8_t usb_config0_descriptor[217] = {
     0x02,                   /* bDescriptorSubtype: format type */
     0x01,                   /* bFormatType */
     0x01,                   /* bNrChannels: 1 */
-    0x02,                   /* bSubFrameSize: Two bytes per audio subframe. */
-    0x10,                   /* bBitResolution 16 bits per sample. */
+    /* bSubFrameSize: Four bytes per audio subframe. */
+    USB_AUDIO_SRC_BITS_PER_SAMPLE / 8,
+    /* bBitResolution 32 bits per sample. */     
+    USB_AUDIO_SRC_BITS_PER_SAMPLE,          
     0x01,                   /* bSamFreqType: One frequency supported. */
     /* sampling frequency */
-    (16000 & 0xFF), ((16000 >> 8) & 0xFF), ((16000 >> 16) & 0xFF), 
+    ((USB_AUDIO_SRC_SAMPLING_RATE >>  0) & 0xFF), 
+    ((USB_AUDIO_SRC_SAMPLING_RATE >>  8) & 0xFF), 
+    ((USB_AUDIO_SRC_SAMPLING_RATE >> 16) & 0xFF),
 
     /* ENDPOINT 1 IN */
     /*  USB Microphone Standard Endpoint Descriptor */
@@ -134,8 +138,9 @@ static const uint8_t usb_config0_descriptor[217] = {
     0x05,                   /* bDescriptorType: endpoint desc. */
     0x81,                   /* bEndpointAddress: IN1 */
     0x0D,                   /* bmAttributes: Isochronous-synchronous */
-    /* wMaxPacketSize: sps * 2 bytes / 1000 */
-    (32 & 0xFF), ((32 >> 8) & 0xFF),
+    /* wMaxPacketSize: channels * sps * bytes_per_subframe / 1000 */
+    ((USB_AUDIO_SRC_MONO_SIZE >> 0) & 0xFF), 
+    ((USB_AUDIO_SRC_MONO_SIZE >> 8) & 0xFF),
     0x01,                   /* bInterval: One packet per frame. */
     0x00,                   /* bRefresh */
     0x00,                   /* bSynchAddress */
@@ -175,11 +180,15 @@ static const uint8_t usb_config0_descriptor[217] = {
     0x02,                   /* bDescriptorSubtype: format type */
     0x01,                   /* bFormatType */
     0x02,                   /* bNrChannels: 2 */
-    0x02,                   /* bSubFrameSize: Two bytes per audio subframe. */
-    0x10,                   /* bBitResolution 16 bits per sample. */
+    /* bSubFrameSize: no of bytes per audio subframe. */
+    USB_AUDIO_SRC_BITS_PER_SAMPLE / 8,
+    /* bBitResolution no of bits per sample. */     
+    USB_AUDIO_SRC_BITS_PER_SAMPLE, 
     0x01,                   /* bSamFreqType: One frequency supported. */
     /* sampling frequency */
-    (16000 & 0xFF), ((16000 >> 8) & 0xFF), ((16000 >> 16) & 0xFF),
+    ((USB_AUDIO_SRC_SAMPLING_RATE >>  0) & 0xFF), 
+    ((USB_AUDIO_SRC_SAMPLING_RATE >>  8) & 0xFF), 
+    ((USB_AUDIO_SRC_SAMPLING_RATE >> 16) & 0xFF),
 
     /* ENDPOINT 1 IN */
     /*  USB Microphone Standard Endpoint Descriptor */
@@ -187,8 +196,9 @@ static const uint8_t usb_config0_descriptor[217] = {
     0x05,                   /* bDescriptorType: endpoint desc. */
     0x81,                   /* bEndpointAddress: IN1 */
     0x0D,                   /* bmAttributes: Isochronous-synchronous */
-    /* wMaxPacketSize: sps * 2 bytes / 1000 */
-    (64 & 0xFF), ((64 >> 8) & 0xFF),
+    /* wMaxPacketSize: channels * sps * bytes_per_subframe / 1000 */
+    ((USB_AUDIO_SRC_STEREO_SIZE >> 0) & 0xFF), 
+    ((USB_AUDIO_SRC_STEREO_SIZE >> 8) & 0xFF),
     0x01,                   /* bInterval: One packet per frame. */
     0x00,                   /* bRefresh */
     0x00,                   /* bSynchAddress */
@@ -290,7 +300,6 @@ static const uint8_t usb_config0_descriptor[217] = {
     /* wMaxPacketSize: */
     USB_VCP_RX_SIZE & 0xff, USB_VCP_RX_SIZE >> 8,
     0x00,                   /* bInterval: ignore for Bulk transfer */
-
 };
 
 /* language ID */
@@ -361,7 +370,7 @@ const uint8_t usb_device_descriptor[] = {
     0x01,                   /* bDeviceProtocol */
     USB_CTRLEP_SIZE,        /* bMaxPacketSize0 */
     0x83, 0x04,             /* idVendor (0x0483) */
-    0x40, 0x57,             /* idProduct = (0x5740) */
+    0x4A, 0x57,             /* idProduct = (0x5740) */
     0x00, 0x02,             /* bcdDevice rel. 2.00 */
     0x01,                   /* Index of string descriptor describing
                              * manufacturer */

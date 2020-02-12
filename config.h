@@ -135,8 +135,17 @@
 #define USB_VCP_TX_SIZE                             32
 /** @brief reception packet size (must be a power of 2) */
 #define USB_VCP_RX_SIZE                             32
+
+/** @brief usb audio sampling rate */
+#define USB_AUDIO_SRC_SAMPLING_RATE                 48000
+/** @brief usb audio: bits per sample (8, 16, 24, 32) */
+#define USB_AUDIO_SRC_BITS_PER_SAMPLE               32
+/** @brief usb audio frame size: mono mode */
+#define USB_AUDIO_SRC_MONO_SIZE                     \
+    (1 * USB_AUDIO_SRC_SAMPLING_RATE * USB_AUDIO_SRC_BITS_PER_SAMPLE / 1000 / 8)
 /** @brief usb audio frame size */
-#define USB_AU_SRC_SIZE                             64
+#define USB_AUDIO_SRC_STEREO_SIZE                   \
+    (2 * USB_AUDIO_SRC_SAMPLING_RATE * USB_AUDIO_SRC_BITS_PER_SAMPLE / 1000 / 8)
 /** @brief usb uses common fifo for reception so we need to set it's size to 
  * hold the largest packet possible */
 #define USB_RX_FIFO_SIZE                            512
