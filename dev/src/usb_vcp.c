@@ -96,7 +96,7 @@ static int USBVCP_EpRxCallback(void *arg)
         /* reset the buffer */
         rx_buf_offs = rx_buf_size = 0;
         /* this shall start the transfer */
-        USB_StartOUTTransfer(USB_EP2, rx_buf, sizeof(rx_buf), 
+        USB_StartOUTTransfer(USB_EP3, rx_buf, sizeof(rx_buf), 
             USBVCP_EpRxCallback);
     }
 
@@ -136,7 +136,7 @@ static int USBVCP_EpTxCallback(void *arg)
         /* update the buffer offset */
         size_t tx_offs = tx_buf_offs; tx_buf_offs += USB_VCP_TX_SIZE;
         /* restart transfer with the maximal data size possible */
-		USB_StartINTransfer(USB_EP2, (uint8_t *)tx_cb_arg.ptr + tx_offs, 
+		USB_StartINTransfer(USB_EP3, (uint8_t *)tx_cb_arg.ptr + tx_offs, 
             min(USB_VCP_TX_SIZE, tx_cb_arg.size - tx_offs), 
             USBVCP_EpTxCallback);
     } 
@@ -194,16 +194,16 @@ static int USBVCP_ResetCallback(void *arg)
     
 	/* prepare fifos */
     /* interrupt transfers */
-	USB_SetTxFifoSize(USB_EP1, USB_VCP_INT_SIZE / 4);
+	USB_SetTxFifoSize(USB_EP2, USB_VCP_INT_SIZE / 4);
     /* Bulk IN (used for data transfers from device to host) */
-	USB_SetTxFifoSize(USB_EP2, USB_VCP_TX_SIZE / 4);
+	USB_SetTxFifoSize(USB_EP3, USB_VCP_TX_SIZE / 4);
 	/* flush fifos */
-	USB_FlushTxFifo(USB_EP1);
 	USB_FlushTxFifo(USB_EP2);
+	USB_FlushTxFifo(USB_EP3);
 	/* configure endpoints */
-	USB_ConfigureINEndpoint(USB_EP1, USB_EPTYPE_INT, USB_VCP_INT_SIZE);
-	USB_ConfigureINEndpoint(USB_EP2, USB_EPTYPE_BULK, USB_VCP_TX_SIZE);
-	USB_ConfigureOUTEndpoint(USB_EP2, USB_EPTYPE_BULK, USB_VCP_RX_SIZE);
+	USB_ConfigureINEndpoint(USB_EP2, USB_EPTYPE_INT, USB_VCP_INT_SIZE);
+	USB_ConfigureINEndpoint(USB_EP3, USB_EPTYPE_BULK, USB_VCP_TX_SIZE);
+	USB_ConfigureOUTEndpoint(USB_EP3, USB_EPTYPE_BULK, USB_VCP_RX_SIZE);
 
     /* the following calls are made to restart the process of reception or 
      * transmission in case of reset */

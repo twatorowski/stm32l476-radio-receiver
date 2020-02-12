@@ -98,9 +98,11 @@ void Main(void)
 	USBDesc_Init();
 	/* initialize core support */
 	USBCore_Init();
-	/* initialize vcp */
-	// USBVCP_Init();
+    /* initialize audio source */
     USBAudioSrc_Init();
+	/* initialize vcp */
+	USBVCP_Init();
+    
 
     /* externals */
     /* led */
@@ -133,7 +135,8 @@ void Main(void)
     
         /* start usb action */
     USB_Connect(1);
-    // TestVCP_Init();
+    /* test the virtual com port */
+    TestVCP_Init();
     // TestVCP2_Init();
 
     // USBVCP2_Recv(test, 10, te);
