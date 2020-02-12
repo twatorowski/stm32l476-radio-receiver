@@ -113,6 +113,10 @@ void USB_SetTxFifoSize(uint32_t ep_num, uint32_t size);
  */
 void USB_FlushTxFifo(uint32_t ep_num);
 
+/* disable the endoint */
+/* TODO: */
+void USB_DisableINEndpoint(int ep_num);
+
 /**
  * @brief Start the IN transfer (from device to host). Send data pointed by 
  * 'ptr' of size 'size'. After the work is done callback 'cb' will be called

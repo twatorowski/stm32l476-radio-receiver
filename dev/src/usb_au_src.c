@@ -33,9 +33,10 @@ static int USBAuSrc_EpTxCallback(void *arg)
     if (si == 1) {
         USB_StartINTransfer(USB_EP1, buf, 32, USBAuSrc_EpTxCallback);
         // si = 0;
-    } else {
-        Sem_Release(&sem);
     }
+    // } else {
+    //     Sem_Release(&sem);
+    // }
 
     return EOK;
 }
@@ -71,10 +72,12 @@ static int USBAuSrc_RequestCallback(void *arg)
                 int iface_alt_num = s->value;
 
 				dprintf("inum = %d, alt = %d\n", iface_num, iface_alt_num);
-                if (iface_num == 1) {
+                if (iface_num == 1 && si != iface_alt_num) {
                     si = iface_alt_num;
-                    if (iface_alt_num && Sem_Lock(&sem, CB_NONE) == EOK) {
+                    if (iface_alt_num) {
                         USBAuSrc_EpTxCallback(0);
+                    } else  {
+                        USB_DisableINEndpoint(USB_EP1);
                     }
                 }
 			} break;   

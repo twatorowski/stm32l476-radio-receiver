@@ -320,6 +320,22 @@ static void USB_OTGFSInEpIsr(void)
 	}
 }
 
+/* handle the incomplete isochronous transfer interrupt */
+/* TODO: */
+static void USB_OTGFSIncompleteIsoXfrInt(void)
+{
+    /* determine which endpoints raised the interrupt */
+	uint32_t irq = (USBFS->DAINT & USBFS->DAINTMSK & USB_DAINTMSK_IEPM) >>
+			LSB(USB_DAINTMSK_IEPM);
+    /* current endpoint index and interrupt flags, transfer size */
+	uint32_t ep_num, ep_irq;
+	/* in endpoint pointer */
+	usb_epin_t *i = in; cb_t t;
+
+
+
+}
+
 /* my interrupt handler */
 void USB_OTGFSIsr(void)
 {
@@ -601,6 +617,12 @@ void USB_FlushTxFifo(uint32_t ep_num)
 	while ((USBFS->GRSTCTL & USB_GRSTCTL_TXFFLSH) != 0);
 }
 
+/* disable the endoint */
+void USB_DisableINEndpoint(int ep_num)
+{
+    USBFS_IE(ep_num)->DIEPCTL |= USB_DOEPCTL_EPDIS | USB_DOEPCTL_SNAK;
+}
+
 /* start data transmission */
 usb_cbarg_t * USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, 
     cb_t cb)
@@ -648,6 +670,14 @@ usb_cbarg_t * USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size,
 		USBFS->DIEPEMPMSK |= 1 << ep_num;
     /* in case of isochronous transfers we feed the fifo right away */
     } else if (ep_type == USB_DIEPCTL_EPTYP_ISO) {
+        /* we need to manually set the even-odd frame id using the frame count 
+         * provided */
+        if (USBFS->DSTS & (1 << LSB(USB_DSTS_FNSOF))) {
+            USBFS_IE(ep_num)->DIEPCTL |= USB_DIEPCTL_SD0PID_SEVNFRM;
+        } else {
+            USBFS_IE(ep_num)->DIEPCTL |= USB_DIEPCTL_SODDFRM;
+        }
+        /* write the packet contents */
         USB_WritePacket(ep_num, ptr, size);
     }
 
