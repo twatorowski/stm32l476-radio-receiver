@@ -30,9 +30,8 @@
 #include "dev/usb.h"
 #include "dev/usbcore.h"
 #include "dev/usbdesc.h"
-#include "dev/usbvcp.h"
-#include "dev/usbvcp2.h"
-#include "dev/usb_au_src.h"
+#include "dev/usb_audiosrc.h"
+#include "dev/usb_vcp.h"
 #include "dev/watchdog.h"
 #include "radio/radio.h"
 #include "test/am_radio.h"
@@ -42,7 +41,6 @@
 #include "test/radio.h"
 #include "test/usart2.h"
 #include "test/vcp.h"
-#include "test/vcp2.h"
 #include "test/vcp_rate.h"
 
 #define DEBUG
@@ -102,8 +100,7 @@ void Main(void)
 	USBCore_Init();
 	/* initialize vcp */
 	// USBVCP_Init();
-    // USBVCP2_Init();
-    USBAuSrc_Init();
+    USBAudioSrc_Init();
 
     /* externals */
     /* led */

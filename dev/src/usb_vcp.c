@@ -1,5 +1,5 @@
 /**
- * @file usbvcp2.c
+ * @file usb_vcp.c
  * 
  * @date 2019-12-07
  * @author twatorowski 
@@ -14,8 +14,7 @@
 #include "dev/usb.h"
 #include "dev/usbcore.h"
 #include "dev/usbdesc.h"
-#include "dev/usbvcp.h"
-#include "dev/usbvcp2.h"
+#include "dev/usb_vcp.h"
 #include "sys/sem.h"
 #include "util/minmax.h"
 #include "util/string.h"
@@ -24,7 +23,7 @@
 #include "debug.h"
 
 /* semaphores */
-sem_t usbvcprx2_sem, usbvcptx2_sem;
+sem_t usbvcprx_sem, usbvcptx_sem;
 
 /* line encoding */
 typedef struct {
@@ -54,7 +53,7 @@ static size_t rx_buf_size, rx_buf_offs, tx_buf_offs;
 static sem_t rx_guard_sem, tx_guard_sem;
 
 /* reception callback */
-static int USBVCP2_EpRxCallback(void *arg)
+static int USBVCP_EpRxCallback(void *arg)
 {
     /* cast event argument */
     usb_cbarg_t *ca = arg;
@@ -97,8 +96,8 @@ static int USBVCP2_EpRxCallback(void *arg)
         /* reset the buffer */
         rx_buf_offs = rx_buf_size = 0;
         /* this shall start the transfer */
-        USB_StartOUTTransfer(USB_EP4, rx_buf, sizeof(rx_buf), 
-            USBVCP2_EpRxCallback);
+        USB_StartOUTTransfer(USB_EP2, rx_buf, sizeof(rx_buf), 
+            USBVCP_EpRxCallback);
     }
 
     /* report status */
@@ -106,7 +105,7 @@ static int USBVCP2_EpRxCallback(void *arg)
 }
 
 /* data sent callback (sent from device to host) */
-static int USBVCP2_EpTxCallback(void *arg)
+static int USBVCP_EpTxCallback(void *arg)
 {
     /* cast event argument */
     usb_cbarg_t *ca = arg;
@@ -137,9 +136,9 @@ static int USBVCP2_EpTxCallback(void *arg)
         /* update the buffer offset */
         size_t tx_offs = tx_buf_offs; tx_buf_offs += USB_VCP_TX_SIZE;
         /* restart transfer with the maximal data size possible */
-		USB_StartINTransfer(USB_EP4, (uint8_t *)tx_cb_arg.ptr + tx_offs, 
+		USB_StartINTransfer(USB_EP2, (uint8_t *)tx_cb_arg.ptr + tx_offs, 
             min(USB_VCP_TX_SIZE, tx_cb_arg.size - tx_offs), 
-            USBVCP2_EpTxCallback);
+            USBVCP_EpTxCallback);
     } 
 
     /* report callback status */
@@ -147,7 +146,7 @@ static int USBVCP2_EpTxCallback(void *arg)
 }
 
 /* request callback: handle all special requests */
-static int USBVCP2_RequestCallback(void *arg)
+static int USBVCP_RequestCallback(void *arg)
 {
 	/* event argument */
 	usbcore_req_evarg_t *a = arg;
@@ -190,50 +189,51 @@ static int USBVCP2_RequestCallback(void *arg)
 }
 
 /* usb reset callback */
-static int USBVCP2_ResetCallback(void *arg)
+static int USBVCP_ResetCallback(void *arg)
 {
+    
 	/* prepare fifos */
     /* interrupt transfers */
-	USB_SetTxFifoSize(USB_EP3, USB_VCP_INT_SIZE / 4);
+	USB_SetTxFifoSize(USB_EP1, USB_VCP_INT_SIZE / 4);
     /* Bulk IN (used for data transfers from device to host) */
-	USB_SetTxFifoSize(USB_EP4, USB_VCP_TX_SIZE / 4);
+	USB_SetTxFifoSize(USB_EP2, USB_VCP_TX_SIZE / 4);
 	/* flush fifos */
-	USB_FlushTxFifo(USB_EP3);
-	USB_FlushTxFifo(USB_EP4);
+	USB_FlushTxFifo(USB_EP1);
+	USB_FlushTxFifo(USB_EP2);
 	/* configure endpoints */
-	USB_ConfigureINEndpoint(USB_EP3, USB_EPTYPE_INT, USB_VCP_INT_SIZE);
-	USB_ConfigureINEndpoint(USB_EP4, USB_EPTYPE_BULK, USB_VCP_TX_SIZE);
-	USB_ConfigureOUTEndpoint(USB_EP4, USB_EPTYPE_BULK, USB_VCP_RX_SIZE);
+	USB_ConfigureINEndpoint(USB_EP1, USB_EPTYPE_INT, USB_VCP_INT_SIZE);
+	USB_ConfigureINEndpoint(USB_EP2, USB_EPTYPE_BULK, USB_VCP_TX_SIZE);
+	USB_ConfigureOUTEndpoint(USB_EP2, USB_EPTYPE_BULK, USB_VCP_RX_SIZE);
 
     /* the following calls are made to restart the process of reception or 
      * transmission in case of reset */
     /* prepare the callback event argument that indicates the reset took place */
     static const usb_cbarg_t ca = { .error = EUSB_RESET, .size = 0 };
     /* invoke both routines */
-    Invoke_CallMeElsewhere(USBVCP2_EpTxCallback, (void *)&ca);
-    Invoke_CallMeElsewhere(USBVCP2_EpRxCallback, (void *)&ca);
+    Invoke_CallMeElsewhere(USBVCP_EpTxCallback, (void *)&ca);
+    Invoke_CallMeElsewhere(USBVCP_EpRxCallback, (void *)&ca);
 
     /* report status callback */
     return EOK;
 }
 
 /* initialize virtual com port logic */
-int USBVCP2_Init(void)
+int USBVCP_Init(void)
 {
 	/* listen to usb reset events */
-	Ev_RegisterCallback(&usb_rst_ev, USBVCP2_ResetCallback);
-	Ev_RegisterCallback(&usbcore_req_ev, USBVCP2_RequestCallback);
+	Ev_RegisterCallback(&usb_rst_ev, USBVCP_ResetCallback);
+	Ev_RegisterCallback(&usbcore_req_ev, USBVCP_RequestCallback);
 
 	/* release semaphore */
-	Sem_Release(&usbvcprx2_sem);
-	Sem_Release(&usbvcptx2_sem);
+	Sem_Release(&usbvcprx_sem);
+	Sem_Release(&usbvcptx_sem);
 
 	/* report status */
 	return EOK;
 }
 
 /* read data */
-usbvcp_cbarg_t * USBVCP2_Recv(void *ptr, size_t size, cb_t cb)
+usbvcp_cbarg_t * USBVCP_Recv(void *ptr, size_t size, cb_t cb)
 {
 	/* sync or async call? */
 	int sync = cb == CB_SYNC;
@@ -246,7 +246,7 @@ usbvcp_cbarg_t * USBVCP2_Recv(void *ptr, size_t size, cb_t cb)
     /* release the transfer semaphore */
     Sem_Release(&rx_guard_sem);
     /* initiate transfer */
-    Invoke_CallMeElsewhere(USBVCP2_EpRxCallback, 0);
+    Invoke_CallMeElsewhere(USBVCP_EpRxCallback, 0);
 
 	/* interrupt will alter callback address after transfer has finished */
 	while (sync && rx_cb == CB_SYNC);
@@ -255,7 +255,7 @@ usbvcp_cbarg_t * USBVCP2_Recv(void *ptr, size_t size, cb_t cb)
 }
 
 /* write data */
-usbvcp_cbarg_t * USBVCP2_Send(const void *ptr, size_t size, cb_t cb)
+usbvcp_cbarg_t * USBVCP_Send(const void *ptr, size_t size, cb_t cb)
 {
 	/* sync or async call? */
 	int sync = cb == CB_SYNC;
@@ -270,7 +270,7 @@ usbvcp_cbarg_t * USBVCP2_Send(const void *ptr, size_t size, cb_t cb)
     /* release the transfer semaphore */
     Sem_Release(&tx_guard_sem);
     /* initiate transfer */
-    Invoke_CallMeElsewhere(USBVCP2_EpTxCallback, 0);
+    Invoke_CallMeElsewhere(USBVCP_EpTxCallback, 0);
 
 	/* interrupt will alter callback address after transfer has finished */
 	while (sync && tx_cb == CB_SYNC);

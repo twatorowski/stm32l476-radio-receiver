@@ -439,25 +439,16 @@ static void USBCore_ProcessSetupData(usb_setup_t *s)
 				/* process frame */
 				rc = USBCore_ProcessSetupGetInterface(s, &ptr, &size);
 			} break;
-			/* unsupported frame? */
-			default : {
-				/* call event */
-				Ev_Notify(&usbcore_req_ev, &arg);
-				/* copy status & other stuff */
-				rc = arg.status, ptr = arg.ptr, size = arg.size;
-			} break;
 			}
 		}
-	/* class request, vendor request - those won't be handled by this code, so
-	 * redirect those to upper layers */
 	} 
-    else {
-        /* TODO: */
-		/* call event */
-		Ev_Notify(&usbcore_req_ev, &arg);
-		/* copy status & other stuff */
-		rc = arg.status, ptr = arg.ptr, size = arg.size;
-	}
+
+    /* prepare event argument to call the others */
+    arg.status = rc, arg.ptr = ptr, arg.size = size;
+    /* call event */
+    Ev_Notify(&usbcore_req_ev, &arg);
+    /* copy status & other stuff */
+    rc = arg.status, ptr = arg.ptr, size = arg.size;
 
 	/* prepare data stage according to transfer direction and result code */
 	/* data is to be sent from device to host */
@@ -478,7 +469,6 @@ static void USBCore_ProcessSetupData(usb_setup_t *s)
 			/* ctl data pointer is zeroed? we are just after the setup stage */
 			if (ctl_ptr == 0) {
 				/* initiate OUT transfer */
-//				while (1);
 				USBCore_StartDataOUTStage(ptr, size);
 			/* pointer is non-zero, data is already transfered (data out completed) */
 			} else {
@@ -700,6 +690,8 @@ static void USBCore_ProcessSetupNoData(usb_setup_t *s)
 	int rc = EFATAL;
 	/* extract type */
 	uint8_t type = s->request_type & USB_SETUP_REQTYPE_TYPE;
+    /* process frame */
+    usbcore_req_evarg_t arg = {s, rc, 0, 0};
 
 	/* standard request */
 	if (type == USB_SETUP_REQTYPE_TYPE_STANDARD) {
@@ -731,29 +723,16 @@ static void USBCore_ProcessSetupNoData(usb_setup_t *s)
 			case USB_SETUP_REQ_SET_INTERFACE : {
 				rc = USBCore_ProcessSetupSetInterface(s);
 			} break;
-			/* unsupported frame? */
-			default : {
-				/* process frame */
-				usbcore_req_evarg_t arg = {s, rc, 0, 0};
-				/* call event */
-				Ev_Notify(&usbcore_req_ev, &arg);
-				/* copy status */
-				rc = arg.status;
-			} break;
 			}
 		}
-	/* class request, vendor request - all wont be handled by this code, so
-	 * redirect those to upper layers */
 	} 
-    //else {
-        /* TODO: */
-		/* process frame */
-		usbcore_req_evarg_t arg = {s, rc, 0, 0};
-		/* call event */
-		Ev_Notify(&usbcore_req_ev, &arg);
-		/* copy status */
-		rc = arg.status;
-	//}
+
+    /* prepare event argument to be passed to other layers */
+    arg.status = rc;
+    /* call event */
+    Ev_Notify(&usbcore_req_ev, &arg);
+    /* copy status */
+    rc = arg.status;
 
 	/* set status */
 	if (rc == EOK) {
@@ -764,6 +743,7 @@ static void USBCore_ProcessSetupNoData(usb_setup_t *s)
 		USBCore_AbortStage();
 	}
 }
+
 /* process setup frame */
 static void USBCore_ProcessSetup(usb_setup_t *s)
 {

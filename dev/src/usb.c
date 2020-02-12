@@ -320,22 +320,6 @@ static void USB_OTGFSInEpIsr(void)
 	}
 }
 
-/* handle the incomplete isochronous transfer interrupt */
-/* TODO: */
-static void USB_OTGFSIncompleteIsoXfrInt(void)
-{
-    /* determine which endpoints raised the interrupt */
-	uint32_t irq = (USBFS->DAINT & USBFS->DAINTMSK & USB_DAINTMSK_IEPM) >>
-			LSB(USB_DAINTMSK_IEPM);
-    /* current endpoint index and interrupt flags, transfer size */
-	uint32_t ep_num, ep_irq;
-	/* in endpoint pointer */
-	usb_epin_t *i = in; cb_t t;
-
-
-
-}
-
 /* my interrupt handler */
 void USB_OTGFSIsr(void)
 {
@@ -365,10 +349,9 @@ void USB_OTGFSIsr(void)
 	if (irq & USB_GINTSTS_USBSUSP)
 		USBFS->GINTSTS = USB_GINTSTS_USBSUSP;
 
-    /* TODO: */
-    if (irq & USB_GINTSTS_IISOIXFR) {
+    /* isochronous transfer incomplete */
+    if (irq & USB_GINTSTS_IISOIXFR)
         USBFS->GINTSTS = USB_GINTSTS_IISOIXFR;
-    }
 
 	/* invalid mode interrupt? */
 	if (irq & USB_GINTSTS_MMIS)
@@ -583,7 +566,7 @@ void USB_SetRxFifoSize(uint32_t size)
 }
 
 /* set tx fifo size */
-void USB_SetTxFifoSize(uint32_t ep_num, uint32_t size)
+void USB_SetTxFifoSize(int ep_num, uint32_t size)
 {
     /* fifo offset */
     uint32_t offset = USBFS->GRXFSIZ;
@@ -608,7 +591,7 @@ void USB_SetTxFifoSize(uint32_t ep_num, uint32_t size)
 }
 
 /* flush tx fifo */
-void USB_FlushTxFifo(uint32_t ep_num)
+void USB_FlushTxFifo(int ep_num)
 {
 	/* flush the fifos */
 	/* Tx fifo */
@@ -617,14 +600,8 @@ void USB_FlushTxFifo(uint32_t ep_num)
 	while ((USBFS->GRSTCTL & USB_GRSTCTL_TXFFLSH) != 0);
 }
 
-/* disable the endoint */
-void USB_DisableINEndpoint(int ep_num)
-{
-    USBFS_IE(ep_num)->DIEPCTL |= USB_DOEPCTL_EPDIS | USB_DOEPCTL_SNAK;
-}
-
 /* start data transmission */
-usb_cbarg_t * USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, 
+usb_cbarg_t * USB_StartINTransfer(int ep_num, void *ptr, size_t size, 
     cb_t cb)
 {
 	/* endpoint pointer */
@@ -686,7 +663,7 @@ usb_cbarg_t * USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size,
 }
 
 /* start data reception */
-usb_cbarg_t * USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, 
+usb_cbarg_t * USB_StartOUTTransfer(int ep_num, void *ptr, size_t size, 
     cb_t cb)
 {
 	/* endpoint pointer */
@@ -724,7 +701,7 @@ usb_cbarg_t * USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size,
 
 /* start setup transfer: size must be a multiple of 8 (setup frame size), use 
  * 24 for best results since host may issue 3 back to back setup packets */
-usb_cbarg_t * USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size, 
+usb_cbarg_t * USB_StartSETUPTransfer(int ep_num, void *ptr, size_t size, 
     cb_t cb)
 {
 	/* endpoint pointer */
@@ -744,7 +721,7 @@ usb_cbarg_t * USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size,
 }
 
 /* configure IN endpoint and activate it */
-void USB_ConfigureINEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size)
+void USB_ConfigureINEndpoint(int ep_num, uint32_t type, size_t mp_size)
 {
 	/* read register */
 	uint32_t temp = USBFS_IE(ep_num)->DIEPCTL & ~(USB_DIEPCTL_EPTYP |
@@ -765,7 +742,7 @@ void USB_ConfigureINEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size)
 }
 
 /* configure OUT endpoint and activate it */
-void USB_ConfigureOUTEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size)
+void USB_ConfigureOUTEndpoint(int ep_num, uint32_t type, size_t mp_size)
 {
 	/* read register */
 	uint32_t temp = USBFS_OE(ep_num)->DOEPCTL & ~(USB_DOEPCTL_EPTYP |
@@ -791,15 +768,29 @@ void USB_SetDeviceAddress(uint8_t addr)
 }
 
 /* stall out endpoint */
-void USB_StallOUTEndpoint(uint32_t ep_num)
+void USB_StallOUTEndpoint(int ep_num)
 {
 	/* stall endpoint */
 	USBFS_OE(ep_num)->DOEPCTL |= USB_DOEPCTL_STALL;
 }
 
 /* stall in endpoint */
-void USB_StallINEndpoint(uint32_t ep_num)
+void USB_StallINEndpoint(int ep_num)
 {
 	/* stall endpoint */
 	USBFS_IE(ep_num)->DIEPCTL |= USB_DIEPCTL_STALL;
+}
+
+/* disable in endoint */
+void USB_DisableINEndpoint(int ep_num)
+{
+    /* set the disable and nak bits */
+    USBFS_IE(ep_num)->DIEPCTL |= USB_DIEPCTL_EPDIS | USB_DIEPCTL_SNAK;
+}
+
+/* disable out endoint */
+void USB_DisableOUTEndpoint(int ep_num)
+{
+    /* set the disable and nak bits */
+    USBFS_OE(ep_num)->DOEPCTL |= USB_DOEPCTL_EPDIS | USB_DOEPCTL_SNAK;
 }

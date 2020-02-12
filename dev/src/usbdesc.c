@@ -42,7 +42,7 @@ static const uint8_t usb_config0_descriptor[100] = {
 		0x24,      				/* bDescriptorType: audio descriptor type */
 		0x01,                 	/* bDescriptorSubtype: audio control header */
 		0x00, 0x01,        		/* bcdADC */
-		0x1E, 0x00,             /* wTotalLength TODO: count up */
+		0x1E, 0x00,             /* wTotalLength */
 		0x01,                   /* bInCollection */
 		0x01,                   /* baInterfaceNr TODO: 0? */
 
@@ -66,7 +66,7 @@ static const uint8_t usb_config0_descriptor[100] = {
         0x01, 0x01,             /* wTerminal: USB Streaming. */
         0x00,                   /* bAssocTerminal: none */
         0x01,                   /* bSourceID: from input terminal */
-        0x00,                   /* iTerminal */
+        0x04,                   /* iTerminal */
 
 
         /* INTERFACE 1 ALT 0 */
@@ -144,22 +144,28 @@ static const uint8_t usb_string0_descriptor[] = {
 
 /* vendor string */
 static const uint8_t usb_string1_descriptor[] = {
-    0x12,					/* bLength */
+    0x1E,					/* bLength */
     0x03,					/* bDescriptorType */
-    'S', 0, 't', 0,
-    'e', 0, 't', 0,
-    'h', 0, 'o', 0,
-    'M', 0, 'e', 0,
+    'M', 0, 'i', 0,
+    'g', 0, 'h', 0,
+    't', 0, 'y', 0,
+    ' ', 0, 'D', 0,
+    'e', 0, 'v', 0,
+    'i', 0, 'c', 0,
+    'e', 0, 's', 0,
 };
 
 /* product string */
 static const uint8_t usb_string2_descriptor[] = {
-    0x12,					/* bLength */
+    0x1E,					/* bLength */
     0x03,					/* bDescriptorType */
-    'S', 0, 't', 0,
-    'e', 0, 't', 0,
-    'h', 0, 'o', 0,
-    'M', 0, 'e', 0,
+    'M', 0, 'i', 0,
+    'g', 0, 'h', 0,
+    't', 0, 'y', 0,
+    ' ', 0, 'D', 0,
+    'e', 0, 'v', 0,
+    'i', 0, 'c', 0,
+    'e', 0, 's', 0,
 };
 
 /* serial number string */
@@ -175,21 +181,10 @@ static uint8_t usb_string3_descriptor[2 + USB_SN_SIZE] = {
 };
 
 /* function 1 string */
-static const uint8_t usb_string4_descritptor[] = {
+static const uint8_t usb_string4_descriptor[] = {
 		0x0C,					/* bLength */
 		0x03,					/* bDescriptorType */
-		'C', 0, 'O', 0,
-		'M', 0, ' ', 0,
-		'A', 0,
-};
-
-/* function 2 string */
-static const uint8_t usb_string5_descritptor[] = {
-		0x0C,					/* bLength */
-		0x03,					/* bDescriptorType */
-		'C', 0, 'O', 0,
-		'M', 0, ' ', 0,
-		'B', 0,
+		'I', 0, 'Q', 0,
 };
 
 /* usb standard device descriptor */
@@ -237,8 +232,7 @@ const uint8_t * usb_string_descriptors[] = {
     usb_string1_descriptor,
     usb_string2_descriptor,
     usb_string3_descriptor,
-    usb_string4_descritptor,
-    usb_string5_descritptor,
+    usb_string4_descriptor,
 };
 
 /* number of descriptors */

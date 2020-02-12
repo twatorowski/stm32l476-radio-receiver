@@ -9,7 +9,7 @@
 
 #include "err.h"
 #include "dev/usb.h"
-#include "dev/usbvcp.h"
+#include "dev/usb_vcp.h"
 #include "sys/time.h"
 #include "util/elems.h"
 #include "util/minmax.h"

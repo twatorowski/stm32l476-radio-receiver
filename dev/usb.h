@@ -104,18 +104,14 @@ void USB_SetRxFifoSize(uint32_t size);
  * @param ep_num endpoint number
  * @param size fifo size expressed in 32-bit words
  */
-void USB_SetTxFifoSize(uint32_t ep_num, uint32_t size);
+void USB_SetTxFifoSize(int ep_num, uint32_t size);
 
 /**
  * @brief Flushes the TX Fifo associated with given endpoint.
  * 
  * @param ep_num endpoint number
  */
-void USB_FlushTxFifo(uint32_t ep_num);
-
-/* disable the endoint */
-/* TODO: */
-void USB_DisableINEndpoint(int ep_num);
+void USB_FlushTxFifo(int ep_num);
 
 /**
  * @brief Start the IN transfer (from device to host). Send data pointed by 
@@ -128,7 +124,7 @@ void USB_DisableINEndpoint(int ep_num);
  * 
  * @return usb_cbarg_t * null as the CB_SYNC operation is not permitted
  */
-usb_cbarg_t *  USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size, 
+usb_cbarg_t *  USB_StartINTransfer(int ep_num, void *ptr, size_t size, 
     cb_t cb);
 
 /**
@@ -143,7 +139,7 @@ usb_cbarg_t *  USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size,
  * 
  * @return usb_cbarg_t * null as the CB_SYNC operation is not permitted
  */
-usb_cbarg_t *  USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size, 
+usb_cbarg_t *  USB_StartOUTTransfer(int ep_num, void *ptr, size_t size, 
     cb_t cb);
 
 /**
@@ -158,7 +154,7 @@ usb_cbarg_t *  USB_StartOUTTransfer(uint32_t ep_num, void *ptr, size_t size,
  * 
  * @return usb_cbarg_t * null as the CB_SYNC operation is not permitted
  */
-usb_cbarg_t *  USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size, 
+usb_cbarg_t *  USB_StartSETUPTransfer(int ep_num, void *ptr, size_t size, 
     cb_t cb);
 
 /**
@@ -169,7 +165,7 @@ usb_cbarg_t *  USB_StartSETUPTransfer(uint32_t ep_num, void *ptr, size_t size,
  * @param type type of endpoint (see USB_EPTYPE_ defines)
  * @param mp_size maximal packet size
  */
-void USB_ConfigureINEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size);
+void USB_ConfigureINEndpoint(int ep_num, uint32_t type, size_t mp_size);
 
 /**
  * @brief Configure OUT endpoint. To be called after USB reset event to 
@@ -179,7 +175,7 @@ void USB_ConfigureINEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size);
  * @param type type of endpoint (see USB_EPTYPE_ defines)
  * @param mp_size maximal packet size
  */
-void USB_ConfigureOUTEndpoint(uint32_t ep_num, uint32_t type, size_t mp_size);
+void USB_ConfigureOUTEndpoint(int ep_num, uint32_t type, size_t mp_size);
 
 /**
  * @brief Set the device addres. To be called during enumeration when host 
@@ -194,14 +190,28 @@ void USB_SetDeviceAddress(uint8_t addr);
  * 
  * @param ep_num endpoint number
  */
-void USB_StallOUTEndpoint(uint32_t ep_num);
+void USB_StallOUTEndpoint(int ep_num);
 
 /**
  * @brief Stall IN endpoint. Halt all the transfers.
  * 
  * @param ep_num ednpoint number
  */
-void USB_StallINEndpoint(uint32_t ep_num);
+void USB_StallINEndpoint(int ep_num);
+
+/**
+ * @brief Disable IN endpoint.
+ * 
+ * @param ep_num endpoint number
+ */
+void USB_DisableINEndpoint(int ep_num);
+
+/**
+ * @brief Disable OUT endpoint.
+ * 
+ * @param ep_num endpoint number
+ */
+void USB_DisableOUTEndpoint(int ep_num);
 
 
 

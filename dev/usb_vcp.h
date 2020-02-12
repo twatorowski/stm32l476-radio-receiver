@@ -1,5 +1,5 @@
 /**
- * @file usbvcp.h
+ * @file usb_vcp.h
  * 
  * @date 2019-12-07
  * @author twatorowski 
