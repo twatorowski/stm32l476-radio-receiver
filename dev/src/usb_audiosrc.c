@@ -19,19 +19,32 @@
 #define DEBUG
 #include "debug.h"
 
+#define MODE_OFF                    0
+#define MODE_MONO                   1
+#define MODE_STEREO                 2
+
 /* example samples buffer */
-static uint16_t buf[] = {
+static uint16_t buf_mono[] = {
     0x0000, 0x30fb, 0x5a81, 0x7640, 0x7fff, 0x7640, 0x5a81, 0x30fb,
     0x0000, 0xcf05, 0xa57f, 0x89c0, 0x8001, 0x89c0, 0xa57f, 0xcf05,
 };
+static uint16_t buf_stereo[] = {
+    0x0000, 0x0000, 0x30fb, 0x0000, 0x5a81, 0x0000, 0x7640, 0x0000, 
+    0x7fff, 0x0000, 0x7640, 0x0000, 0x5a81, 0x0000, 0x30fb, 0x0000,
+    0x0000, 0x0000, 0xcf05, 0x0000, 0xa57f, 0x0000, 0x89c0, 0x0000, 
+    0x8001, 0x0000, 0x89c0, 0x0000, 0xa57f, 0x0000, 0xcf05, 0x0000
+};
 /* interface opened? */
-static int opened;
+static int mode;
 
 /* data transfer complete callback */
 static int USBAudioSrc_EpTxCallback(void *arg)
 {
+    uint16_t *buf = mode == MODE_STEREO ? buf_stereo : buf_mono;
+    size_t size = mode == MODE_STEREO ? sizeof(buf_stereo) : sizeof(buf_mono);
+
     /* send buffer contents */
-    USB_StartINTransfer(USB_EP1, buf, sizeof(buf), USBAudioSrc_EpTxCallback);
+    USB_StartINTransfer(USB_EP1, buf, size, USBAudioSrc_EpTxCallback);
     /* report status */
     return EOK;
 }
@@ -61,16 +74,15 @@ static int USBAudioSrc_RequestCallback(void *arg)
                 /* show message */
 				dprintf("inum = %d, alt = %d\n", iface_num, iface_alt_num);
                 /* alternate setting 1: sampling mode */
-                if (!opened && iface_alt_num == 1) {
+                if (!mode && iface_alt_num) {
                     /* start sending audio */
-                    USB_StartINTransfer(USB_EP1, buf, sizeof(buf), 
-                        USBAudioSrc_EpTxCallback);
+                    USBAudioSrc_EpTxCallback(0);
                 /* alternate setting 0: disabled mode */
-                } else if (opened && iface_alt_num == 0) {
+                } else if (mode && !iface_alt_num) {
                     USB_DisableINEndpoint(USB_EP1);
                 }
                 /* update the 'opened' state */
-                opened = iface_alt_num == 1;
+                mode = iface_alt_num;
                 /* set status code */
                 a->status = EOK;
 			} break;   
@@ -87,7 +99,7 @@ static int USBAudioSrc_ResetCallback(void *arg)
 {
 	/* prepare fifos */
     /* interrupt transfers */
-	USB_SetTxFifoSize(USB_EP1, USB_AU_SRC_SIZE);
+	USB_SetTxFifoSize(USB_EP1, USB_AU_SRC_SIZE / 4);
 	/* flush fifos */
 	USB_FlushTxFifo(USB_EP1);
 	/* configure endpoints */
