@@ -38,7 +38,7 @@ static struct {
 	/* halted endpoints mask */
 	uint32_t ep_halt_tx, ep_halt_rx;
 	/* device interface alternate settings */
-	uint32_t alternate_settings[4];
+	uint32_t alternate_settings[10];
 } dev;
 
 /* callbacks */
@@ -386,6 +386,7 @@ static int USBCore_ProcessSetupGetInterface(usb_setup_t *s, void **ptr,
 			*ptr = buf, *size = 1;
 			/* status is ok */
 			rc = EOK;
+            
 		}
 	}
 
@@ -449,7 +450,9 @@ static void USBCore_ProcessSetupData(usb_setup_t *s)
 		}
 	/* class request, vendor request - those won't be handled by this code, so
 	 * redirect those to upper layers */
-	} else {
+	} 
+    else {
+        /* TODO: */
 		/* call event */
 		Ev_Notify(&usbcore_req_ev, &arg);
 		/* copy status & other stuff */
@@ -731,7 +734,7 @@ static void USBCore_ProcessSetupNoData(usb_setup_t *s)
 			/* unsupported frame? */
 			default : {
 				/* process frame */
-				usbcore_req_evarg_t arg = {s, EFATAL, 0, 0};
+				usbcore_req_evarg_t arg = {s, rc, 0, 0};
 				/* call event */
 				Ev_Notify(&usbcore_req_ev, &arg);
 				/* copy status */
@@ -741,14 +744,16 @@ static void USBCore_ProcessSetupNoData(usb_setup_t *s)
 		}
 	/* class request, vendor request - all wont be handled by this code, so
 	 * redirect those to upper layers */
-	} else {
+	} 
+    //else {
+        /* TODO: */
 		/* process frame */
-		usbcore_req_evarg_t arg = {s, EFATAL, 0, 0};
+		usbcore_req_evarg_t arg = {s, rc, 0, 0};
 		/* call event */
 		Ev_Notify(&usbcore_req_ev, &arg);
 		/* copy status */
 		rc = arg.status;
-	}
+	//}
 
 	/* set status */
 	if (rc == EOK) {

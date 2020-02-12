@@ -284,6 +284,10 @@ static void USB_OTGFSInEpIsr(void)
 		/* endpoint did not raise the interrupt? */
 		if (!(irq & 1))
 			continue;
+        if (ep_num == 1) {
+            ASM volatile ("nop\n");
+            dprintf("ep1\n", 0);
+        }
 		/* read endpoint specific interrupt */
 		ep_irq = USBFS_IE(ep_num)->DIEPINT & 
             (USBFS->DIEPMSK | USB_DIEPINT_TXFE);
@@ -295,12 +299,14 @@ static void USB_OTGFSInEpIsr(void)
 		if ((ep_irq & USB_DIEPINT_XFRC) && i->callback) {
             /* build up the event argument */
             usb_cbarg_t arg = { .error = EOK, .size = i->offs };
+            assert(i->callback != 0, "callback is zero", ep_num);
             /* call the callback */
 			t = i->callback, i->callback = 0, t(&arg);
         }
 
 		/* fifo empty? */
 		if (ep_irq & USB_DIEPINT_TXFE) {
+            assert(i->callback != 0, "callback is zero", ep_num);
 			/* store packet */
 			i->offs += USB_WritePacket(ep_num, i->ptr + i->offs, 
                 i->size - i->offs);
@@ -321,7 +327,7 @@ void USB_OTGFSIsr(void)
 	uint32_t irq = USBFS->GINTSTS & USBFS->GINTMSK;
 
 	/* display interrupt information */
-	// dprintf("irq = %08x\n", irq);
+	dprintf("irq = %08x\n", irq);
 
 	/* invalid interrupt? */
 	if (!irq)
@@ -342,6 +348,11 @@ void USB_OTGFSIsr(void)
 	/* usb suspend interrupt */
 	if (irq & USB_GINTSTS_USBSUSP)
 		USBFS->GINTSTS = USB_GINTSTS_USBSUSP;
+
+    /* TODO: */
+    if (irq & USB_GINTSTS_IISOIXFR) {
+        USBFS->GINTSTS = USB_GINTSTS_IISOIXFR;
+    }
 
 	/* invalid mode interrupt? */
 	if (irq & USB_GINTSTS_MMIS)
@@ -598,6 +609,8 @@ usb_cbarg_t * USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size,
 	usb_epin_t *ep = &in[ep_num];
 	/* single packet max size, packet count */
 	uint32_t max_size, pkt_cnt;
+    /* endpoint type */
+    uint32_t ep_type = USBFS_IE(ep_num)->DIEPCTL & USB_DIEPCTL_EPTYP;
 
     /* sanity check */
     assert(cb != CB_SYNC, "usb: sync operation not permitted", ep_num);
@@ -616,14 +629,27 @@ usb_cbarg_t * USB_StartINTransfer(uint32_t ep_num, void *ptr, size_t size,
 	USBFS_IE(ep_num)->DIEPTSIZ &= ~(USB_DIEPTSIZ_XFRSIZ | USB_DIEPTSIZ_PKTCNT);
 	/* program transfer size */
 	USBFS_IE(ep_num)->DIEPTSIZ |= pkt_cnt << LSB(USB_DIEPTSIZ_PKTCNT) | size;
-	/* enable fifo tx empty interrupt for this endpoint */
-	if (size)
-		USBFS->DIEPEMPMSK |= 1 << ep_num;
-	/* enable endpoint and clear nak condition: this shall result in tx fifo 
-     * empty interrupt during which data will be stored in fifo */
+    /* isochronous endpoint? */
+    if (ep_type == USB_DIEPCTL_EPTYP_ISO) {
+        /* set the number of packets for frame */
+        USBFS_IE(ep_num)->DIEPTSIZ = 
+            (USBFS_IE(ep_num)->DIEPTSIZ & ~USB_DIEPTSIZ_MULCNT) |
+            1 << LSB(USB_DIEPTSIZ_MULCNT);
+    }
+
+    /* enable endpoint and clear nak condition */
 	USBFS_IE(ep_num)->DIEPCTL = 
         (USBFS_IE(ep_num)->DIEPCTL & ~USB_DIEPCTL_EPDIS) |
 		USB_DIEPCTL_CNAK | USB_DIEPCTL_EPENA;
+
+	/* enable fifo tx empty interrupt for this endpoint: the interrupt routine 
+     * will fetch the data pointed by the ptr */
+	if (size && ep_type != USB_DIEPCTL_EPTYP_ISO) {
+		USBFS->DIEPEMPMSK |= 1 << ep_num;
+    /* in case of isochronous transfers we feed the fifo right away */
+    } else if (ep_type == USB_DIEPCTL_EPTYP_ISO) {
+        USB_WritePacket(ep_num, ptr, size);
+    }
 
     /* always returns 0, no sync operation possible */
     return 0;

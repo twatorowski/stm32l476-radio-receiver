@@ -135,6 +135,8 @@
 #define USB_VCP_TX_SIZE                             32
 /** @brief reception packet size (must be a power of 2) */
 #define USB_VCP_RX_SIZE                             32
+/** @brief usb audio frame size */
+#define USB_AU_SRC_SIZE                             32
 /** @brief usb uses common fifo for reception so we need to set it's size to 
  * hold the largest packet possible */
 #define USB_RX_FIFO_SIZE                            512

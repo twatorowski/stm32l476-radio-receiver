@@ -32,6 +32,7 @@
 #include "dev/usbdesc.h"
 #include "dev/usbvcp.h"
 #include "dev/usbvcp2.h"
+#include "dev/usb_au_src.h"
 #include "dev/watchdog.h"
 #include "radio/radio.h"
 #include "test/am_radio.h"
@@ -47,12 +48,6 @@
 #define DEBUG
 #include "debug.h"
 
-char test[10];
-
-static int te(void *ptr)
-{
-    return 0;
-}
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -108,6 +103,7 @@ void Main(void)
 	/* initialize vcp */
 	// USBVCP_Init();
     // USBVCP2_Init();
+    USBAuSrc_Init();
 
     /* externals */
     /* led */
@@ -120,7 +116,7 @@ void Main(void)
     CS43L22_Init();
 
     /* at commands protocol */
-    AT_Init();
+    // AT_Init();
 
     /* initialize the radio receiver logic */
     // Radio_Init();
@@ -149,7 +145,7 @@ void Main(void)
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
-		AT_Poll();
+		// AT_Poll();
 
         // TestVCP_Poll();
 

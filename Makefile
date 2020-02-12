@@ -54,7 +54,7 @@ SRC += ./dev/src/dec.c
 
 SRC += ./dev/src/usb.c ./dev/src/usbcore.c
 SRC += ./dev/src/usbdesc.c ./dev/src/usbvcp.c
-SRC += ./dev/src/usbvcp2.c
+SRC += ./dev/src/usbvcp2.c ./dev/src/usb_au_src.c
 
 # digital signal processing
 SRC += ./dsp/src/biquad.c
