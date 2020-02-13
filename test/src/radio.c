@@ -234,8 +234,6 @@ static int TestRadio_DecimationCallback(void *ptr)
     return EOK;
 }
 
-int last_dec_pp=-1;
-
 /* rf data ready callback */
 static int TestRadio_AnalogCallback(void *ptr)
 {
@@ -246,10 +244,6 @@ static int TestRadio_AnalogCallback(void *ptr)
     float *i_dec_tail = i_dec[!dec_pp], *q_dec_tail = q_dec[!dec_pp];
     /* number of samples after the hardware decimator */
     const int dec_num = ea->num / DEC_DECIMATION_RATE;
-
-    assert(last_dec_pp != dec_pp, "whops", 0);
-    last_dec_pp = dec_pp;
-
 
     /* set the led on to indicate the start of the processing */
     Led_SetState(1, LED_RED);
@@ -300,6 +294,7 @@ static int TestRadio_AnalogCallback(void *ptr)
 /* initialize test */
 int TestRadio_Init(void)
 {
+    int freq = 225000;
     int mix1, mix2;
     /* check if the cpu clock is a multiple of rf sampling frequency */
     assert((int)(CPUCLOCK_FREQ / RF_SAMPLING_FREQ) * RF_SAMPLING_FREQ 
@@ -307,8 +302,8 @@ int TestRadio_Init(void)
         "sampling freq", 0);
 
     /* set the test frequencies */
-    mix1 = Mix1_SetLOFrequency(1 * 225000);
-    mix2 = Mix2_SetLOFrequency(1 * (225000 - mix1));
+    mix1 = Mix1_SetLOFrequency(1 * freq);
+    mix2 = Mix2_SetLOFrequency(1 * (freq - mix1));
 
     /* show the frequencies */
     dprintf("mix1 = %d, mix2 = %d\n", mix1, mix2);

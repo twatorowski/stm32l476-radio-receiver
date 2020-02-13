@@ -10,7 +10,6 @@
 #include "assert.h"
 #include "err.h"
 #include "at/ntf/radio.h"
-#include "dev/analog.h"
 #include "dev/await.h"
 #include "dev/cs43l22.h"
 #include "dev/dec.h"
@@ -18,6 +17,7 @@
 #include "dev/invoke.h"
 #include "dev/joystick.h"
 #include "dev/led.h"
+#include "dev/rfin.h"
 #include "dev/sai1a.h"
 #include "dsp/fixp_sat.h"
 #include "dsp/float_fixp.h"
@@ -38,8 +38,8 @@ static int set_frequency = 225000, actual_frequency;
 /* frequencies of the local oscillator */
 static float lo1_frequency, lo2_frequency;
 
-/* rf samples buffer */
-static int16_t rf[2048];
+/* rf signal buffer, current data pointer */
+static int16_t rf[DEC_DECIMATION_RATE * 32];
 /* complex data after 1st stage mixing */
 static int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
 /* complex data after downsampling: in-phase channel, and quadrature channel. 
@@ -55,9 +55,9 @@ static float dem[elems(rf) / 2 / DEC_DECIMATION_RATE];
 /* audio gain */
 static float set_gain = 10.0f;
 
-/* fixed point dac samples buffer */
-static int32_t dac[elems(rf)];
-/* dac buffer head pointer */
+/* dac samples buffer */
+static int32_t dac[elems(rf) * 16 / DEC_DECIMATION_RATE];
+/* dac pointers */
 static uint32_t dac_head;
 /* states of the dac ic */
 static enum dac_states {
@@ -179,14 +179,12 @@ static int Radio_DecimationCallback(void *ptr)
 static int Radio_AnalogCallback(void *ptr)
 {
     /* cast event argument */
-    analog_evarg_t *ea = ptr;
+    rfin_evarg_t *ea = ptr;
     /* head/tail adjusted pointers to the ping-pong buffer phase indicator */
     float *i_dec_head = i_dec[ dec_pp], *q_dec_head = q_dec[ dec_pp];
     float *i_dec_tail = i_dec[!dec_pp], *q_dec_tail = q_dec[!dec_pp];
     /* number of samples after the hardware decimator */
-    const int hw_dec_num = elems(i_dec[0]);
-    /* number of samples after software decimator did it's job */
-    const int sw_dec_num = hw_dec_num / 4;
+    const int dec_num = ea->num / DEC_DECIMATION_RATE;
     
     /* set the led on to indicate the start of the processing */
     Led_SetState(1, LED_RED);
@@ -198,35 +196,24 @@ static int Radio_AnalogCallback(void *ptr)
         Radio_DecimationCallback);
 
     /* 2nd stage mixing, done in-situ */
-    Mix2_Mix(i_dec_tail, q_dec_tail, hw_dec_num, i_dec_tail, q_dec_tail);
+    Mix2_Mix(i_dec_tail, q_dec_tail, dec_num, i_dec_tail, q_dec_tail);
 
-    /* decimation by 4 for the sake of processing speed-up and to allow pushing 
-     * the data out using AT commands */
-    /* firstly apply the filtration */
-    Dec4_Filter(i_dec_tail, q_dec_tail, hw_dec_num, i_dec_tail, 
-        q_dec_tail);
-    /* then drop unused samples */
-    Dec4_Decimate(i_dec_tail, q_dec_tail, hw_dec_num, i_dec_tail, 
-        q_dec_tail);
-
-    /* put the decimated data to the at notifications module */
-    ATNtfRadio_PutIQSamples(i_dec_tail, q_dec_tail, sw_dec_num);
 
     /* filter before demodulation */
-    DemodAM_Filter(i_dec_tail, q_dec_tail, sw_dec_num, i_dec_tail, 
+    DemodAM_Filter(i_dec_tail, q_dec_tail, dec_num, i_dec_tail, 
         q_dec_tail);
     /* demodulate the output data */
-    DemodAM_Demodulate(i_dec_tail, q_dec_tail, sw_dec_num, dem);
+    DemodAM_Demodulate(i_dec_tail, q_dec_tail, dec_num, dem);
 
     /* apply gain */
-    FloatScale_Scale(dem, sw_dec_num, set_gain, dem);
+    FloatScale_Scale(dem, dec_num, set_gain, dem);
     /* convert to the fixed point notation for the dac */
-    FloatFixp_FloatToFixp32(dem, sw_dec_num, 24, dac + dac_head);
+    FloatFixp_FloatToFixp32(dem, dec_num, 24, dac + dac_head);
     /* do the saturation to avoid overflows when the audio is getting loud */
-    FixpSat_Saturate(dac + dac_head, sw_dec_num, 24, dac + dac_head);
+    FixpSat_Saturate(dac + dac_head, dec_num, 24, dac + dac_head);
 
     /* update dac head index */
-    dac_head = (dac_head + sw_dec_num) % elems(dac);
+    dac_head = (dac_head + dec_num) % elems(dac);
 
     /* start streaming audio to the dac if not already started, but only if we 
      * have at least half of the dac buffer filled with data. this prevents the 
@@ -257,13 +244,12 @@ int Radio_Init(void)
 
     /* subscribe to rf data ready notifications. the callback will be called 
      * every time a half of the buffer gets filled */
-    Ev_RegisterCallback(&analog_ev, Radio_AnalogCallback);
+    Ev_RegisterCallback(&rfin_ev, Radio_AnalogCallback);
     /* register callback for the joystick events */
     Ev_RegisterCallback(&joystick_ev, Radio_JoystickCallback);
 
     /* start sampling */
-    Analog_StartSampling(ANALOG_CH5, CPUCLOCK_FREQ / RF_SAMPLING_FREQ, rf, 
-        elems(rf));
+    RFIn_StartSampling(rf, elems(rf));
 
     /* initialize the local oscillators */
     Invoke_CallMeElsewhere(Radio_UpdateFrequencyCallback, 0);

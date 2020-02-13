@@ -107,16 +107,16 @@ void Main(void)
     /* externals */
     /* led */
     Led_Init();
-    // /* lcd display */
-    // Display_Init();
-    // /* joystick */
-    // Joystick_Init();
-    // /* bring up the dac */
+    /* lcd display */
+    Display_Init();
+    /* joystick */
+    Joystick_Init();
+    /* bring up the dac */
     CS43L22_Init();
 
 
     /* initialize the radio receiver logic */
-    // Radio_Init();
+    Radio_Init();
 
     /* tests */
     /* test usart2 communication */
@@ -128,7 +128,7 @@ void Main(void)
     /* initialize dac test */
     // TestDACSine_Init();
     /* test radio signal path */
-    TestRadio_Init();
+    // TestRadio_Init();
 
     
     /* start usb action */
