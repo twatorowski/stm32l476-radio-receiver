@@ -93,16 +93,16 @@ void Main(void)
 	I2C1_Init();
 	/* initialize sai1a interface */
 	SAI1A_Init();
-    // /* initialize usb */
-	// USB_Init();
-	// /* initialize usb descriptors */
-	// USBDesc_Init();
-	// /* initialize core support */
-	// USBCore_Init();
-    // /* initialize audio source */
-    // USBAudioSrc_Init();
-	// /* initialize vcp */
-	// USBVCP_Init();
+    /* initialize usb */
+	USB_Init();
+	/* initialize usb descriptors */
+	USBDesc_Init();
+	/* initialize core support */
+	USBCore_Init();
+    /* initialize audio source */
+    USBAudioSrc_Init();
+	/* initialize vcp */
+	USBVCP_Init();
 
     /* externals */
     /* led */
@@ -132,7 +132,7 @@ void Main(void)
 
     
     /* start usb action */
-    // USB_Connect(1);
+    USB_Connect(1);
     /* test the virtual com port */
     // TestVCP_Init();
     // TestVCP2_Init();

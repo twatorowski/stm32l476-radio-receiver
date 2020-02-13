@@ -27,7 +27,8 @@
 #include "util/minmax.h"
 #include "util/string.h"
 
-#define DEBUG
+// #define DEBUG
+#undef DEBUG
 #include "debug.h"
 
 /* system events: reset event */
