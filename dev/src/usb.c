@@ -28,7 +28,6 @@
 #include "util/string.h"
 
 // #define DEBUG
-#undef DEBUG
 #include "debug.h"
 
 /* system events: reset event */

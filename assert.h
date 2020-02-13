@@ -13,7 +13,7 @@
 #include "reset.h"
 #include "util/concatstr.h"
 
-#define DEBUG
+// #define DEBUG
 #include "debug_dump.h"
 
 /* assert message prefix */

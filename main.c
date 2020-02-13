@@ -131,8 +131,6 @@ void Main(void)
     // TestRadio_Init();
 
     
-    /* start usb action */
-    USB_Connect(1);
     /* test the virtual com port */
     // TestVCP_Init();
     // TestVCP2_Init();
