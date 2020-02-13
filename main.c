@@ -115,7 +115,6 @@ void Main(void)
     CS43L22_Init();
 
 
-
     /* initialize the radio receiver logic */
     // Radio_Init();
 
@@ -127,14 +126,9 @@ void Main(void)
     /* initialize decimators test */
     // TestDec_Init();
     /* initialize dac test */
-    TestDACSine_Init();
-
-    /* test radio */
-    // TestRadio_Init();
-    // TestAMRadio_Init();
-    /* test dynamic interrupt levels */
-    // TestDynInt_Init();
-
+    // TestDACSine_Init();
+    /* test radio signal path */
+    TestRadio_Init();
 
     
     /* start usb action */

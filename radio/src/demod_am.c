@@ -15,19 +15,19 @@
 #include "util/elems.h"
 
 /* am demodulation input low pass filter (for selectivity) (lowpass, 
- * f_c = 0.512 * f_nyq) */
+ * f_c = 2.5kHz @ 48ksps */
 static const biquad_taps_t lpf_taps[] = {
-    { .b0 = +1.012531e-01, .b1 = +2.025062e-01, .b2 = +1.012531e-01, 
-      .a1 = +3.919481e-02, .a2 = +3.992096e-02 },
+    { .b0 = +4.834173e-04, .b1 = +9.668347e-04, .b2 = +4.834173e-04, 
+      .a1 = -1.460218e+00, .a2 = +5.420541e-01 },
     { .b0 = +1.000000e+00, .b1 = +2.000000e+00, .b2 = +1.000000e+00, 
-      .a1 = +5.452817e-02, .a2 = +4.467472e-01 },
+      .a1 = -1.686415e+00, .a2 = +7.809287e-01 },
 };
 
 /* am demodulation output high pass filter (for removing the dc offset)
- * (highpass, f_c = 0.004 * f_nyq) */
+ * (highpass, f_c = 30Hz @ 48ksps) */
 static const biquad_taps_t hpf_taps[] = {
-    { .b0 = +9.909422e-01, .b1 = -1.981884e+00, .b2 = +9.909422e-01, 
-      .a1 = -1.981802e+00, .a2 = +9.819665e-01 },
+    { .b0 = +9.972270e-01, .b1 = -1.994454e+00, .b2 = +9.972270e-01, 
+      .a1 = -1.994446e+00, .a2 = +9.944618e-01 },
 };
 
 /* low-pass input filters */

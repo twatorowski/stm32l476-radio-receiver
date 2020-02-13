@@ -8,7 +8,7 @@ LD_SCRIPT = stm32l476rgt6.ld
 
 # ----------------------- OPTIMIZATION LEVEL ------------------------
 # use '-O0' (no optimization) for debugging or (-Os) for release
-OPT_LEVEL = -O0
+OPT_LEVEL = -Os
 
 # -------------------------- VERSION NUMBER -------------------------
 # software version

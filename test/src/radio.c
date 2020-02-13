@@ -12,15 +12,17 @@
 #include "assert.h"
 #include "err.h"
 #include "arch/arch.h"
-#include "dev/analog.h"
 #include "dev/await.h"
 #include "dev/cs43l22.h"
 #include "dev/dec.h"
 #include "dev/invoke.h"
 #include "dev/led.h"
+#include "dev/rfin.h"
 #include "dev/sai1a.h"
 #include "dev/timemeas.h"
+#include "dsp/fixp_sat.h"
 #include "dsp/float_fixp.h"
+#include "dsp/float_scale.h"
 #include "radio/demod_am.h"
 #include "radio/mix1.h"
 #include "radio/mix2.h"
@@ -32,20 +34,28 @@
 #include "debug.h"
 
 /* rf signal buffer, current data pointer */
-static int16_t rf[1024], *rf_ptr;
-/* number of samples to process */
-static int rf_samples_num;
+static int16_t rf[DEC_DECIMATION_RATE * 32];
+/* complex data after 1st stage mixing */
+static int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
+/* complex data after downsampling: in-phase channel, and quadrature channel. 
+ * we use twice as much space needed to operate in ping-pong mode */
+static float i_dec[2][elems(rf) / 2 / DEC_DECIMATION_RATE], 
+    q_dec[2][elems(rf) / 2 / DEC_DECIMATION_RATE];
+/* ping pong indicator */
+static int dec_pp;
+
+/* AM-demodulated audio samples */
+static float dem[elems(rf) / 2 / DEC_DECIMATION_RATE];
+
 /* dac samples buffer */
-static int32_t dac[1024];
+static int32_t dac[elems(rf) * 16 / DEC_DECIMATION_RATE];
 /* dac pointers */
 static uint32_t dac_head;
-/* states of the dac */
-static enum states {
+/* states of the dac ic */
+static enum dac_states {
     LOCK, INIT, PLAY, VOLUME, ON, ERR,
-} state;
+} dac_state;
 
-/* guarding semaphore */
-static sem_t sem = { .released = 1 };
 
 #if 0
 /* radio frequency signal (187.5kHz, mod: am 10% 4*976Hz) */
@@ -191,99 +201,97 @@ static int TestRadio_DACEnableCallback(void *ptr)
     /* error code (if applicable) */
     int error = arg ? arg->error : EOK;
 
-    /* got the error condition? */
-    if (error)
-        state = ERR;
+    /* catch all the errors here */
+    assert(error == EOK, "dac initialization error", error);
 
     /* switch on current state */
-    switch (state) {
+    switch (dac_state) {
     /* lock the resource */
-    case LOCK : state = INIT, Sem_Lock(&cs43l22_sem, cb); break;
+    case LOCK : dac_state = INIT, Sem_Lock(&cs43l22_sem, cb); break;
     /* do the initialization */
     case INIT : {
         /* start the initialization */
-        state = PLAY, CS43L22_Initialize(cb); 
+        dac_state = PLAY, CS43L22_Initialize(cb); 
     } break;
     /* start the playback */
-    case PLAY : state = VOLUME, CS43L22_Play(cb); break;
+    case PLAY : dac_state = VOLUME, CS43L22_Play(cb); break;
     /* set the volume */
-    case VOLUME : state = ON, CS43L22_SetVolume(-0, cb); break;
+    case VOLUME : dac_state = ON, CS43L22_SetVolume(-0, cb); break;
     /* dac is now on or in error state, release the semaphore! */
-    default : state = INIT; Sem_Release(&cs43l22_sem); break;
+    default : dac_state = INIT; Sem_Release(&cs43l22_sem); break;
     }
 
     /* report status */
     return EOK;
 }
 
-/* start the processing */
-static int TestRadio_Process(void *ptr)
+/* this is called after the samples get decimated */
+static int TestRadio_DecimationCallback(void *ptr)
 {
-    /* products of the 1st stage mixer */
-    int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
-    /* current dac head pointer */
-    uint32_t head = dac_head % elems(dac);
-    /* decimated samples */
-    float i_dec[elems(rf) / 2 / DEC_DECIMATION_RATE];
-    float q_dec[elems(rf) / 2 / DEC_DECIMATION_RATE];
-    /* demodulated samples */
-    float dem[elems(rf) / 2 / DEC_DECIMATION_RATE];
-
-    /* set the led on  */
-    Led_SetState(1, LED_RED);
-
-    /* do the mixing */
-    Mix1_Mix(rf_ptr, rf_samples_num, i_mix1, q_mix1);
-    /* decimate data */
-    Dec_Decimate(i_mix1, q_mix1, elems(i_mix1), i_dec, q_dec, CB_SYNC);
-
-    /* do the mixing */
-    Mix2_Mix(i_dec, q_dec, elems(i_dec), i_dec, q_dec);
-
-    /* filter before demodulation */
-    DemodAM_Filter(i_dec, q_dec, elems(i_dec), i_dec, q_dec);
-    /* demodulate the output data */
-    DemodAM_Demodulate(i_dec, q_dec, elems(i_dec), dem);
-
-    for (int i = 0; i < elems(dem); i++)
-        dem[i] *= 16;
-
-    /* convert to the fixed point notation for the dac */
-    FloatFixp_FloatToFixp32(dem, elems(dem), 24, dac + head);
-
-    /* update dac head */
-    dac_head += elems(dem);
-
-    /* start streaming audio to the dac */
-    if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
-        /* start streaming data */
-        SAI1A_StartStreaming(dac, elems(dac));
-        /* start the dac enable procedure */
-        Await_CallMeLater(100, TestRadio_DACEnableCallback, 0);
-    }
-
-    /* set the led off */
-    Led_SetState(0, LED_RED);
-    /* release the semaphore */
-    Sem_Release(&sem);
-
-    /* report status */
+    /* make pings into pongs */
+    dec_pp = !dec_pp;
+    /* report callback processing status */
     return EOK;
 }
+
+int last_dec_pp=-1;
 
 /* rf data ready callback */
 static int TestRadio_AnalogCallback(void *ptr)
 {
     /* map event argument */
-    analog_evarg_t *ea = ptr;
+    rfin_evarg_t *ea = ptr;
+    /* head/tail adjusted pointers to the ping-pong buffer phase indicator */
+    float *i_dec_head = i_dec[ dec_pp], *q_dec_head = q_dec[ dec_pp];
+    float *i_dec_tail = i_dec[!dec_pp], *q_dec_tail = q_dec[!dec_pp];
+    /* number of samples after the hardware decimator */
+    const int dec_num = ea->num / DEC_DECIMATION_RATE;
 
-    /* check if calls do not overlap */
-    assert(Sem_Lock(&sem, CB_NONE) == EOK, "unable to lock semaphore", 0);
+    assert(last_dec_pp != dec_pp, "whops", 0);
+    last_dec_pp = dec_pp;
 
-    /* store information */
-    rf_ptr = ea->samples; rf_samples_num = ea->num;
-    /* invoke the processing on the low priority level */
-    Invoke_CallMeElsewhere(TestRadio_Process, 0);
+
+    /* set the led on to indicate the start of the processing */
+    Led_SetState(1, LED_RED);
+
+    /* do the mixing */
+    Mix1_Mix(ea->samples, ea->num, i_mix1, q_mix1);
+    /* start the parallel process of rf samples decimation */
+    Dec_Decimate(i_mix1, q_mix1, ea->num, i_dec_head, q_dec_head, 
+        TestRadio_DecimationCallback);
+    
+    /* 2nd stage mixing, done in-situ */
+    Mix2_Mix(i_dec_tail, q_dec_tail, dec_num, i_dec_tail, q_dec_tail);
+
+    /* filter before demodulation */
+    DemodAM_Filter(i_dec_tail, q_dec_tail, dec_num, i_dec_tail, q_dec_tail);
+    /* demodulate the output data */
+    DemodAM_Demodulate(i_dec_tail, q_dec_tail, dec_num, dem);
+
+    /* apply gain */
+    FloatScale_Scale(dem, dec_num, 10.0, dem);
+    /* convert to the fixed point notation for the dac */
+    FloatFixp_FloatToFixp32(dem, dec_num, 24, dac + dac_head);
+    /* do the saturation to avoid overflows when the audio is getting loud */
+    FixpSat_Saturate(dac + dac_head, dec_num, 24, dac + dac_head);
+
+    /* update dac head index */
+    dac_head = (dac_head + dec_num) % elems(dac);
+
+    /* start streaming audio to the dac if not already started, but only if we 
+     * have at least half of the dac buffer filled with data. this prevents the 
+     * artifacts by ensuring that we are not writing data that is currenlty 
+     * being sent to dac */
+    if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
+        /* start streaming data */
+        SAI1A_StartStreaming(dac, elems(dac));
+        /* start the dac enable procedure 100 ms after the stream was started 
+         * to avoid audio glitches */
+        Await_CallMeLater(100, TestRadio_DACEnableCallback, 0);
+    }
+
+    /* set the led off to indicate the end of the processing */
+    Led_SetState(0, LED_RED);
 
     /* report status */
     return EOK;
@@ -302,13 +310,13 @@ int TestRadio_Init(void)
     mix1 = Mix1_SetLOFrequency(1 * 225000);
     mix2 = Mix2_SetLOFrequency(1 * (225000 - mix1));
 
+    /* show the frequencies */
     dprintf("mix1 = %d, mix2 = %d\n", mix1, mix2);
 
     /* subscribe to rf data ready notifications */
-    Ev_RegisterCallback(&analog_ev, TestRadio_AnalogCallback);
-    /* start sampling */
-    Analog_StartSampling(ANALOG_CH5, CPUCLOCK_FREQ / RF_SAMPLING_FREQ, rf, 
-        elems(rf));
+    Ev_RegisterCallback(&rfin_ev, TestRadio_AnalogCallback);
+    /* start sampling! */
+    RFIn_StartSampling(rf, elems(rf));
     
     /* report status */
     return EOK;

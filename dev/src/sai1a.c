@@ -52,9 +52,10 @@ int SAI1A_Init(void)
     /* sanity check for the clock reference */
     assert(CPUCLOCK_REF_FREQ == 4000000, "unusable reference frequency", 0);
 
-    /* generate SAI1 clock: REF = 4MHz, N = 21, VCO = 4 * 21 = 84MHz,
-     * P = 7 -> pll output = sai clock = VCO/7 = 12MHz */
-	RCC->PLLSAI1CFGR = 21 << LSB(RCC_PLLSAI1CFGR_PLLSAI1N) | 
+    /* generate SAI1 clock: REF = 4MHz, N = 43, VCO = 4 * 43 = 172MHz,
+     * P = 7 -> pll output = sai clock = VCO/7 ~= 24.5174MHz, 
+     * frame_clock = sai clock / 2 * 256 =  95.982kHz / 2 ~= 48ksps */
+	RCC->PLLSAI1CFGR = 43 << LSB(RCC_PLLSAI1CFGR_PLLSAI1N) | 
         RCC_PLLSAI1CFGR_PLLSAI1PEN;
 	/* enable pll */
 	RCC->CR |= RCC_CR_PLLSAI1ON;
@@ -71,7 +72,7 @@ int SAI1A_Init(void)
 	GPIOE->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR2_0 | GPIO_OSPEEDER_OSPEEDR4_0 |
 			GPIO_OSPEEDER_OSPEEDR5_0 | GPIO_OSPEEDER_OSPEEDR6_0;
 	/* set as peripheral driven */
-	GPIOE->MODER |= /*GPIO_MODER_MODER2_1 |*/ GPIO_MODER_MODER4_1 |
+	GPIOE->MODER |= GPIO_MODER_MODER2_1 | GPIO_MODER_MODER4_1 |
 			GPIO_MODER_MODER5_1 | GPIO_MODER_MODER6_1;
 
 	/* set appropriate channel */
@@ -83,18 +84,17 @@ int SAI1A_Init(void)
 	/* set peripheral address */
 	DMA2C1->CPAR = (uint32_t)&SAI1A->DR;
 
-	/* configure sai: 24 bit data, no clock division to allow for flexible 
-     * frame length */
+	/* configure sai: 24 bit data, divide by 1. */
 	SAI1A->CR1 = SAI_CR1_DS_2 | SAI_CR1_DS_1 | SAI_CR1_DMAEN | 
-        SAI_CR1_NODIV | SAI_CR1_MONO;
+        1 << LSB(SAI_CR1_MCKDIV) | SAI_CR1_MONO;
 	/* 1/4 fifo treshold */
 	SAI1A->CR2 = SAI_CR2_FTH_0;
 	/* configure slots (use two of the slots) */
 	SAI1A->SLOTR = SAI_SLOTR_SLOTEN_0 | SAI_SLOTR_SLOTEN_1 | 
         (2 - 1) << LSB(SAI_SLOTR_NBSLOT);
-	/* sync on rising edge, use 250 bit long frames: 48ksps * 250 = 12MHz */
+	/* sync on rising edge, 64 bit long frames */
 	SAI1A->FRCR = SAI_FRCR_FSPOL | SAI_FRCR_FSDEF | 
-        (125 - 1) << LSB(SAI_FRCR_FSALL) | (250 - 1) << LSB(SAI_FRCR_FRL);
+        (32 - 1) << LSB(SAI_FRCR_FSALL) | (64 - 1) << LSB(SAI_FRCR_FRL);
 	/* enable clock output */
 	SAI1A->CR1 |= SAI_CR1_OUTDRIV;
 

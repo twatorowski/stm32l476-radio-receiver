@@ -214,11 +214,9 @@ cs43l22_cbarg_t * CS43L22_Initialize(cb_t cb)
         /* select headphones port */
         { OT_WRITE, .tfer = { CS43L22_REG_POWER_CTL_2, 0xAF }},
         /* set clocking information */
-        { OT_WRITE, .tfer = { CS43L22_REG_CLOCKING_CTL, 0x22 }},
+        { OT_WRITE, .tfer = { CS43L22_REG_CLOCKING_CTL, 0x20 }},
         /* Set the Slave Mode and the audio Standard */
         { OT_WRITE, .tfer = { CS43L22_REG_IFACE_CTL_1, 0x00 }},
-        /* SCLK = MCLK */
-        { OT_WRITE, .tfer = { CS43L22_REG_IFACE_CTL_2, 0x01 }},
         /* write master volume registers */
         { OT_WRITE, .tfer = { CS43L22_REG_MASTER_A_VOL, 0x18 }},
         { OT_WRITE, .tfer = { CS43L22_REG_MASTER_B_VOL, 0x18 }},

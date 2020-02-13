@@ -95,13 +95,11 @@
 #define INT_PRI_USB                                 0x50
 /** @} */
 
-
 /** @name USART2 configuration */
 /** @{ */
 /** @brief usart baudrate */
 #define USART2_BAUD_RATE                            1500000
 /** @} */
-
 
 /** @name CS43L22 configuration */
 /** @{ */
@@ -137,7 +135,6 @@
 #define SAI1_SAMPLING_RATE                          BB_SAMPLING_RATE
 /** */
 /** @} */
-
 
 /** @name USB module */
 /** @{ */
