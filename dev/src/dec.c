@@ -104,6 +104,10 @@ int Dec_Init(void)
 	/* enable interrupt */
 	NVIC_ENABLEINT(STM32_INT_DMA1C4);
 
+    /* this is prepared for only one decimation rate */
+    assert(DEC_DECIMATION_RATE == 50, "unsupported decimation factor",
+        DEC_DECIMATION_RATE);
+
 	/* enable interface */
 	DFSDMC0->CHCFGR1 |= DFSDM_CHCFGR1_DFSDMEN;
 
@@ -123,8 +127,8 @@ int Dec_Init(void)
 	/* enable channel */
 	DFSDMC1->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
 
-	/* 0th Filter: mapped to channel 0 (I samples), decimation by 64, sinc^4
-	 * filter, bit growth = N*log2(R) = 3 * log2(64) = 18, output data width =
+	/* 0th Filter: mapped to channel 0 (I samples), decimation by 50, sinc^4
+	 * filter, bit growth = N*log2(R) = 3 * log2(50) ~= 18, output data width =
 	 * input data width + bit growth = 14b + 18b = 32b, but since the output
 	 * register can only handle 24 bit data we need to shift by 6 (done in
 	 * input channel configuration) */
@@ -132,7 +136,7 @@ int Dec_Init(void)
 	DFSDMF0->CR1 &= ~DFSDM_CR1_DFEN;
 	/* enable fast conversion, enable dma requests  */
 	DFSDMF0->CR1 = DFSDM_CR1_FAST | DFSDM_CR1_RDMAEN;
-	/* sinc^3 filter, decimation by 64, no integration */
+	/* sinc^3 filter, decimation by 50, no integration */
 	DFSDMF0->FCR = DFSDM_FCR_FORD_1 | DFSDM_FCR_FORD_0 |
         (DEC_DECIMATION_RATE - 1) << LSB(DFSDM_FCR_FOSR) | 
         0 << LSB(DFSDM_FCR_IOSR);
@@ -141,8 +145,8 @@ int Dec_Init(void)
 	/* enable filtering */
 	DFSDMF0->CR1 |= DFSDM_CR1_DFEN;
 
-	/* 1st Filter: mapped to channel 1 (Q samples), decimation by 64, sinc^3
-	 * filter, bit growth = N*log2(R) = 3 * log2(64) = 18, output data width =
+	/* 1st Filter: mapped to channel 1 (Q samples), decimation by 50, sinc^3
+	 * filter, bit growth = N*log2(R) = 3 * log2(50) ~= 18, output data width =
 	 * input data width + bit growth = 14b + 18b = 32b, but since the output
 	 * register can only handle 24 bit data we need to shift by 8 (done in
 	 * input channel configuration) */
@@ -150,7 +154,7 @@ int Dec_Init(void)
 	DFSDMF1->CR1 &= ~DFSDM_CR1_DFEN;
 	/* enable fast conversion, enable dma requests  */
 	DFSDMF1->CR1 = DFSDM_CR1_FAST | DFSDM_CR1_RDMAEN;
-	/* sinc^3 filter, decimation by 64, no integration */
+	/* sinc^3 filter, decimation by 50, no integration */
 	DFSDMF1->FCR = DFSDM_FCR_FORD_1 | DFSDM_FCR_FORD_0  | 
         (DEC_DECIMATION_RATE - 1) << LSB(DFSDM_FCR_FOSR) |
         0 << LSB(DFSDM_FCR_IOSR);
@@ -165,7 +169,7 @@ int Dec_Init(void)
 	/* initialize filter, this needs to be done because filter is not willing to
 	 * output any data before it's integrators and combs are filled (decimation
 	 * factor * filter order samples are needed) */
-	for (int i = 0; i < 32 * 4; i++)
+	for (int i = 0; i < DEC_DECIMATION_RATE * 5; i++)
 		DFSDMC0->CHDATINR = 0, DFSDMC1->CHDATINR = 0;
 
     /* sanity check */
@@ -196,6 +200,10 @@ dec_cbarg_t * Dec_Decimate(const int16_t *i, const int16_t *q, int num,
     /* sanity check */
     assert((uintptr_t)i % 4 == 0 && (uintptr_t)q % 4 == 0, 
         "input data address is not aligned", 0);
+    /* sanity check for the number of samples */
+    assert(samples_num * DEC_DECIMATION_RATE == num, 
+        "number of samples is not divisible by the decimation factor", 
+        num);
 
 	/* prepare output dma for I samples */
 	DMA1C4->CCR &= ~DMA_CCR_EN;

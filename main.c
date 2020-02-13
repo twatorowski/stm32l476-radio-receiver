@@ -9,7 +9,6 @@
 
 #include "assert.h"
 #include "at/at.h"
-#include "dev/analog.h"
 #include "dev/await.h"
 #include "dev/cpuclock.h"
 #include "dev/cs43l22.h"
@@ -39,6 +38,7 @@
 #include "test/dec.h"
 #include "test/float_fixp.h"
 #include "test/radio.h"
+#include "test/rfin.h"
 #include "test/usart2.h"
 #include "test/vcp.h"
 #include "test/vcp_rate.h"
@@ -68,6 +68,11 @@ void Main(void)
     /* start systime */
 	SysTime_Init();
 
+    /* internals needed for the debug */
+    /* initialize usart2 */
+    USART2_Init();
+    /* at commands protocol */
+    AT_Init();
     /* start debugging */
     Debug_Init();
 
@@ -80,63 +85,62 @@ void Main(void)
     ExtiMux_Init();
     /* async awaiter */
     Await_Init();
-    /* initialize usart2 */
-    USART2_Init();
-    /* intiialize adc sampler module */
-    Analog_Init();
+    /* initialize rf input pin */
+    RFIn_Init();
     /* initialize decimator for the rf data */
     Dec_Init();
     /* initialize i2c1 */
 	I2C1_Init();
 	/* initialize sai1a interface */
 	SAI1A_Init();
-    /* initialize rf input pin */
-    RFIn_Init();
-    /* initialize usb */
-	USB_Init();
-	/* initialize usb descriptors */
-	USBDesc_Init();
-	/* initialize core support */
-	USBCore_Init();
-    /* initialize audio source */
-    USBAudioSrc_Init();
-	/* initialize vcp */
-	USBVCP_Init();
-    
+    // /* initialize usb */
+	// USB_Init();
+	// /* initialize usb descriptors */
+	// USBDesc_Init();
+	// /* initialize core support */
+	// USBCore_Init();
+    // /* initialize audio source */
+    // USBAudioSrc_Init();
+	// /* initialize vcp */
+	// USBVCP_Init();
 
     /* externals */
     /* led */
     Led_Init();
-    /* lcd display */
-    Display_Init();
-    /* joystick */
-    Joystick_Init();
-    /* bring up the dac */
+    // /* lcd display */
+    // Display_Init();
+    // /* joystick */
+    // Joystick_Init();
+    // /* bring up the dac */
     CS43L22_Init();
 
-    /* at commands protocol */
-    // AT_Init();
+
 
     /* initialize the radio receiver logic */
     // Radio_Init();
 
     /* tests */
-    /* initialize usart2 test */
+    /* test usart2 communication */
     // TestUSART2_Init();
-    /* initialize dac test */
-    // TestDACSine_Init();
+    /* test the rf signal sampler */
+    // TestRFIn_Init();
     /* initialize decimators test */
     // TestDec_Init();
+    /* initialize dac test */
+    TestDACSine_Init();
+
     /* test radio */
     // TestRadio_Init();
     // TestAMRadio_Init();
     /* test dynamic interrupt levels */
     // TestDynInt_Init();
+
+
     
-        /* start usb action */
-    USB_Connect(1);
+    /* start usb action */
+    // USB_Connect(1);
     /* test the virtual com port */
-    TestVCP_Init();
+    // TestVCP_Init();
     // TestVCP2_Init();
 
     // USBVCP2_Recv(test, 10, te);
@@ -145,9 +149,12 @@ void Main(void)
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
-		// AT_Poll();
+		AT_Poll();
 
         // TestVCP_Poll();
+
+
+        /* poll tests */
 
 
         /* kick the dog counter */

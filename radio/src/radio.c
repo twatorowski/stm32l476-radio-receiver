@@ -234,8 +234,7 @@ static int Radio_AnalogCallback(void *ptr)
      * being sent to dac */
     if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
         /* start streaming data */
-        SAI1A_StartStreaming((float)RF_SAMPLING_FREQ / DEC_DECIMATION_RATE / 4, 
-            dac, elems(dac));
+        SAI1A_StartStreaming(dac, elems(dac));
         /* start the dac enable procedure 100 ms after the stream was started 
          * to avoid audio glitches */
         Await_CallMeLater(100, Radio_DACEnableCallback, 0);

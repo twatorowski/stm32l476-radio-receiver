@@ -8,7 +8,7 @@ LD_SCRIPT = stm32l476rgt6.ld
 
 # ----------------------- OPTIMIZATION LEVEL ------------------------
 # use '-O0' (no optimization) for debugging or (-Os) for release
-OPT_LEVEL = -Os
+OPT_LEVEL = -O0
 
 # -------------------------- VERSION NUMBER -------------------------
 # software version
@@ -43,7 +43,7 @@ SRC += ./base64/src/base64.c
 # device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
 SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
-SRC += ./dev/src/analog.c ./dev/src/i2c1.c
+SRC += ./dev/src/i2c1.c
 SRC += ./dev/src/cs43l22.c ./dev/src/rfin.c
 SRC += ./dev/src/sai1a.c ./dev/src/display.c
 SRC += ./dev/src/extimux.c ./dev/src/joystick.c
@@ -73,6 +73,7 @@ SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
 SRC += ./test/src/vcp.c ./test/src/vcp_rate.c
+SRC += ./test/src/rfin.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

@@ -257,7 +257,7 @@ static int TestRadio_Process(void *ptr)
     /* start streaming audio to the dac */
     if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
         /* start streaming data */
-        SAI1A_StartStreaming(48000, dac, elems(dac));
+        SAI1A_StartStreaming(dac, elems(dac));
         /* start the dac enable procedure */
         Await_CallMeLater(100, TestRadio_DACEnableCallback, 0);
     }

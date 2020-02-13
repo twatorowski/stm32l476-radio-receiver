@@ -12,6 +12,7 @@
 #include "compiler.h"
 #include "err.h"
 #include "version.h"
+#include "dev/systime.h"
 #include "sys/sem.h"
 
 #define DEBUG
@@ -108,6 +109,9 @@ int Debug_Init(void)
     Debug_PrintExcInfo(&debug_exc_info);
     Debug_PrintSCBInfo(&debug_scb_info);
     Debug_PrintAssertInfo(&debug_assert_info);
+
+    /* give it some time to flow out of the debug interfaces */
+    SysTime_Delay(100);
 
     /* report status */
     return EOK;

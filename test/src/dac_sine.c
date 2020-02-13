@@ -71,7 +71,7 @@ static int TestDACSine_EnCallback(void *ptr)
         /* advance the state machine */
         state = INIT; 
         /* start the serial audio data stream */
-        SAI1A_StartStreaming(48000, (int32_t *)sine, elems(sine)); 
+        SAI1A_StartStreaming((int32_t *)sine, elems(sine)); 
         /* lock the await module */
         Await_CallMeLater(100, TestDACSine_EnCallback, 0);
     } break;
@@ -99,19 +99,15 @@ int TestDACSine_Init(void)
     for (int i = 0; i <(int)elems(sine); i++)
         sine[i] = (int32_t)sine[i] >> 1;
 
+    /* start the process by acquiring the lock */
+    Sem_Lock(&cs43l22_sem, TestDACSine_EnCallback);
+
     /* report status */
     return EOK;
 }
-int done;
+
 /* poll test */
 void TestDACSine_Poll(void)
 {
-    /* check timer */
-    if (dtime(time(0), timer) < 2000)
-        return;
 
-    /* kick the timer */
-    timer = time(0);
-    /* start the process by acquiring the lock */
-    Sem_Lock(&cs43l22_sem, TestDACSine_EnCallback);
 }

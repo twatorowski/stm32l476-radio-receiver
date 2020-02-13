@@ -17,13 +17,13 @@
 #include "stm32l476/stm32l476.h"
 
 /* includes with interrupt/exceptions handlers */
-#include "dev/analog.h"
 #include "dev/await.h"
 #include "dev/dec.h"
 #include "dev/extimux.h"
 #include "dev/i2c1.h"
 #include "dev/invoke.h"
 #include "dev/joystick.h"
+#include "dev/rfin.h"
 #include "dev/sai1a.h"
 #include "dev/usart2.h"
 #include "dev/usb.h"
@@ -51,7 +51,7 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     SET_INT_VEC(STM32_INT_DMA1C6, USART2_DMA1C6Isr),
 
     /* ADC sampler */
-    SET_INT_VEC(STM32_INT_DMA1C1, Analog_DMA1C1Isr),
+    SET_INT_VEC(STM32_INT_DMA1C1, RFIn_DMA1C1Isr),
 
     /* decimators */
     SET_INT_VEC(STM32_INT_DMA1C4, Dec_DMA1C4Isr),

@@ -9,6 +9,7 @@
  * Outputs ausio samples @ 31.25ksps. Mono.
  */
 
+#include "assert.h"
 #include "err.h"
 #include "dev/i2c1.h"
 #include "dev/systime.h"
@@ -46,6 +47,20 @@ int SAI1A_Init(void)
 	/* release reset */
 	RCC->APB2RSTR &= ~RCC_APB2RSTR_SAI1RST;
 
+    /* sanity check for the desired sampling rate */
+    assert(SAI1_SAMPLING_RATE == 48000, "unsupported sampling rate", 0);
+    /* sanity check for the clock reference */
+    assert(CPUCLOCK_REF_FREQ == 4000000, "unusable reference frequency", 0);
+
+    /* generate SAI1 clock: REF = 4MHz, N = 21, VCO = 4 * 21 = 84MHz,
+     * P = 7 -> pll output = sai clock = VCO/7 = 12MHz */
+	RCC->PLLSAI1CFGR = 21 << LSB(RCC_PLLSAI1CFGR_PLLSAI1N) | 
+        RCC_PLLSAI1CFGR_PLLSAI1PEN;
+	/* enable pll */
+	RCC->CR |= RCC_CR_PLLSAI1ON;
+	/* wait till it is stable */
+	while (!(RCC->CR & RCC_CR_PLLSAI1RDY));
+
 	/* configure pins */
 	GPIOE->MODER &= ~(GPIO_MODER_MODER2 | GPIO_MODER_MODER4 | GPIO_MODER_MODER5
 			| GPIO_MODER_MODER6);
@@ -56,29 +71,30 @@ int SAI1A_Init(void)
 	GPIOE->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR2_0 | GPIO_OSPEEDER_OSPEEDR4_0 |
 			GPIO_OSPEEDER_OSPEEDR5_0 | GPIO_OSPEEDER_OSPEEDR6_0;
 	/* set as peripheral driven */
-	GPIOE->MODER |= GPIO_MODER_MODER2_1 | GPIO_MODER_MODER4_1 |
+	GPIOE->MODER |= /*GPIO_MODER_MODER2_1 |*/ GPIO_MODER_MODER4_1 |
 			GPIO_MODER_MODER5_1 | GPIO_MODER_MODER6_1;
 
 	/* set appropriate channel */
 	DMA2->CSELR = (DMA2->CSELR & ~DMA_CSELR_C1S) | DMA2_CSELR_C1S_SAI1_A;
-
+ 
 	/* configure dma channel */
 	DMA2C1->CCR = DMA_CCR_DIR | DMA_CCR_TCIE | DMA_CCR_CIRC | DMA_CCR_MSIZE_1 |
 			DMA_CCR_PSIZE_1 | DMA_CCR_MINC;
 	/* set peripheral address */
 	DMA2C1->CPAR = (uint32_t)&SAI1A->DR;
 
-	/* configure sai: 24 bit data, divide input clock by 16 */
+	/* configure sai: 24 bit data, no clock division to allow for flexible 
+     * frame length */
 	SAI1A->CR1 = SAI_CR1_DS_2 | SAI_CR1_DS_1 | SAI_CR1_DMAEN | 
-        (16 / 2) << LSB(SAI_CR1_MCKDIV) | SAI_CR1_MONO;
+        SAI_CR1_NODIV | SAI_CR1_MONO;
 	/* 1/4 fifo treshold */
 	SAI1A->CR2 = SAI_CR2_FTH_0;
 	/* configure slots (use two of the slots) */
 	SAI1A->SLOTR = SAI_SLOTR_SLOTEN_0 | SAI_SLOTR_SLOTEN_1 | 
         (2 - 1) << LSB(SAI_SLOTR_NBSLOT);
-	/* sync on rising edge */
-	SAI1A->FRCR = SAI_FRCR_FSPOL | SAI_FRCR_FSDEF | 31 << LSB(SAI_FRCR_FSALL) | 
-        63 << LSB(SAI_FRCR_FRL);
+	/* sync on rising edge, use 250 bit long frames: 48ksps * 250 = 12MHz */
+	SAI1A->FRCR = SAI_FRCR_FSPOL | SAI_FRCR_FSDEF | 
+        (125 - 1) << LSB(SAI_FRCR_FSALL) | (250 - 1) << LSB(SAI_FRCR_FRL);
 	/* enable clock output */
 	SAI1A->CR1 |= SAI_CR1_OUTDRIV;
 
@@ -91,26 +107,10 @@ int SAI1A_Init(void)
 }
 
 /* start streaming data */
-void SAI1A_StartStreaming(float sampling_rate, const int32_t *ptr, int num)
+void SAI1A_StartStreaming(const int32_t *ptr, int num)
 {
-    /* sai master clock frequency must be equal to = sampling_rate * mck_div *
-     * frame_length = sampling_rate * 4 * 256 = sampling_rate * 1024. We need to 
-     * generate that from the sai1 pll that is clocked from the REF clock by 
-     * adjusting the multiplier. the divider is constant and equal to 7 */
-    float mclk_freq = sampling_rate * 16 * 256;
-    /* compute the multiplier */
-    int mult = fp_round(mclk_freq * 7 / CPUCLOCK_REF_FREQ);
-
 	/* enter critical section */
 	Critical_Enter();
-
-    /* generate SAI1 clock */
-	RCC->PLLSAI1CFGR = mult << LSB(RCC_PLLSAI1CFGR_PLLSAI1N) | 
-        RCC_PLLSAI1CFGR_PLLSAI1PEN;
-	/* enable pll */
-	RCC->CR |= RCC_CR_PLLSAI1ON;
-	/* wait till it is stable */
-	while (!(RCC->CR & RCC_CR_PLLSAI1RDY));
 
 	/* set memory address */
 	DMA2C1->CMAR = (uint32_t)ptr;
