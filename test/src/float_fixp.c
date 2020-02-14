@@ -222,6 +222,8 @@ static const int32_t i32_from_f32[] = {
 /* perform test */
 int TestFloatFixp_Init(void)
 {   
+    float one_fl; int32_t one_i32;
+
     /* buffer for the output */
     union {
         /* integers array */
@@ -230,8 +232,23 @@ int TestFloatFixp_Init(void)
         float fl[elems(f32)];
     } output;
 
+    /* test one value */
+    one_fl = 1;
+    /* test the number one value */
+    FloatFixp_FloatToFixp32(&one_fl, 1, 23, &one_i32);
+    /* check */
+    assert(one_i32 == 1 << 23, "'one' test failed", one_i32);
+
+    /* test negaitve one */
+    one_fl = -1;
+    /* test the number one value */
+    FloatFixp_FloatToFixp32(&one_fl, 1, 23, &one_i32);
+    /* check */
+    assert(one_i32 == -(1 << 23), "'neg one' test failed", one_i32);
+
+
     /* convert float -> int32 */
-    FloatFixp_FloatToFixp32(f32, elems(f32), 31, output.i32);
+    FloatFixp_FloatToFixp32(f32, elems(f32), 23, output.i32);
     /* sanity check */
     for (int i = 0 ; i < elems(f32); i++)
         assert(output.i32[i] == i32_from_f32[i], 

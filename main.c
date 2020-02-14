@@ -114,7 +114,6 @@ void Main(void)
     /* bring up the dac */
     CS43L22_Init();
 
-
     /* initialize the radio receiver logic */
     Radio_Init();
 
@@ -129,6 +128,8 @@ void Main(void)
     // TestDACSine_Init();
     /* test radio signal path */
     // TestRadio_Init();
+    /* test the float to fixp conversion */
+    // TestFloatFixp_Init();
 
     
     /* test the virtual com port */
