@@ -31,8 +31,8 @@ static int USBAudioSrc_EpTxCallback(void *arg)
 {   
     /* cast argument */
     usb_cbarg_t *ca = arg;
-    /* extract transfer size */
-    size_t transfer_size = ca ? ca->size : 0;
+    // /* extract transfer size TODO: */
+    // size_t transfer_size = ca ? ca->size : 0;
     
     /* prepare the event argument */
     usb_audio_evarg_t ea = { .mode = mode, .ptr = 0, .size = 0 };

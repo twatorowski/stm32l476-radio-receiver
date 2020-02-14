@@ -174,8 +174,8 @@ static int Radio_USBAudioCallback(void *ptr)
     /* get the event argument */
     usb_audio_evarg_t *ea = ptr;
 
-    /* got enough samples? advance the tail pointer */
-    if (usb_head - usb_tail >= USB_AUDIO_SRC_SAMPLES_PER_FRAME * 2)
+    /* got enough samples? advance the tail pointer TODO: */
+    if (usb_head - usb_tail > USB_AUDIO_SRC_SAMPLES_PER_FRAME * 2)
         usb_tail += USB_AUDIO_SRC_SAMPLES_PER_FRAME * 2;
 
     /* convert tail pointer to tail index */
@@ -199,7 +199,7 @@ static int Radio_USBAudioPutSamples(const int32_t *left, const int32_t *right,
     int samples_num = num * 2;
     /* limit the number of samples copied */
     samples_num = min(samples_num, 
-        (int)(elems(usb_buf) - (usb_head - usb_tail)));
+        ((int)(elems(usb_buf) - (usb_head - usb_tail)) / 2));
 
     /* number of samples before wrapping occurs, limited to overall number of 
      * samples */
