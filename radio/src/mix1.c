@@ -22,83 +22,85 @@
 
 /* cosine look-up table, scaled by 2^30 so that it fits into 31 bits. last bit 
  * from the 32 bit word is left to accomodate the rounding factor used during 
- * mixing */
+ * mixing, the length of the lut must divide the data portion length that 
+ * you'll be feeding to the mixer */
 static const int32_t cos_lut[] = {
-    +0x3fffffff, +0x3ffb10c0, +0x3fec43c6, +0x3fd39b59,
-    +0x3fb11b47, +0x3f84c8e1, +0x3f4eaafd, +0x3f0ec9f4,
-    +0x3ec52f9f, +0x3e71e758, +0x3e14fdf6, +0x3dae81ce,
-    +0x3d3e82ad, +0x3cc511d8, +0x3c424209, +0x3bb6276d,
-    +0x3b20d79d, +0x3a8269a2, +0x39daf5e8, +0x392a9642,
-    +0x387165e2, +0x37af8158, +0x36e50689, +0x361214af,
-    +0x3536cc51, +0x34534f40, +0x3367c08f, +0x32744492,
-    +0x317900d5, +0x30761c17, +0x2f6bbe44, +0x2e5a106f,
-    +0x2d413ccc, +0x2c216eaa, +0x2afad268, +0x29cd9577,
-    +0x2899e649, +0x275ff452, +0x261feff9, +0x24da0a99,
-    +0x238e7673, +0x223d66a8, +0x20e70f32, +0x1f8ba4db,
-    +0x1e2b5d38, +0x1cc66e99, +0x1b5d1009, +0x19ef7943,
-    +0x187de2a6, +0x17088531, +0x158f9a75, +0x14135c94,
-    +0x1294062f, +0x1111d262, +0x0f8cfcbd, +0x0e05c135,
-    +0x0c7c5c1e, +0x0af10a22, +0x09640837, +0x07d59396,
-    +0x0645e9af, +0x04b54825, +0x0323ecbe, +0x0192155f,
-    +0x00000000, -0x0192155f, -0x0323ecbe, -0x04b54825,
-    -0x0645e9af, -0x07d59396, -0x09640837, -0x0af10a22,
-    -0x0c7c5c1e, -0x0e05c135, -0x0f8cfcbd, -0x1111d262,
-    -0x1294062f, -0x14135c94, -0x158f9a75, -0x17088531,
-    -0x187de2a6, -0x19ef7943, -0x1b5d1009, -0x1cc66e99,
-    -0x1e2b5d38, -0x1f8ba4db, -0x20e70f32, -0x223d66a8,
-    -0x238e7673, -0x24da0a99, -0x261feff9, -0x275ff452,
-    -0x2899e649, -0x29cd9577, -0x2afad268, -0x2c216eaa,
-    -0x2d413ccc, -0x2e5a106f, -0x2f6bbe44, -0x30761c17,
-    -0x317900d5, -0x32744492, -0x3367c08f, -0x34534f40,
-    -0x3536cc51, -0x361214af, -0x36e50689, -0x37af8158,
-    -0x387165e2, -0x392a9642, -0x39daf5e8, -0x3a8269a2,
-    -0x3b20d79d, -0x3bb6276d, -0x3c424209, -0x3cc511d8,
-    -0x3d3e82ad, -0x3dae81ce, -0x3e14fdf6, -0x3e71e758,
-    -0x3ec52f9f, -0x3f0ec9f4, -0x3f4eaafd, -0x3f84c8e1,
-    -0x3fb11b47, -0x3fd39b59, -0x3fec43c6, -0x3ffb10c0,
-    -0x3fffffff, -0x3ffb10c0, -0x3fec43c6, -0x3fd39b59,
-    -0x3fb11b47, -0x3f84c8e1, -0x3f4eaafd, -0x3f0ec9f4,
-    -0x3ec52f9f, -0x3e71e758, -0x3e14fdf6, -0x3dae81ce,
-    -0x3d3e82ad, -0x3cc511d8, -0x3c424209, -0x3bb6276d,
-    -0x3b20d79d, -0x3a8269a2, -0x39daf5e8, -0x392a9642,
-    -0x387165e2, -0x37af8158, -0x36e50689, -0x361214af,
-    -0x3536cc51, -0x34534f40, -0x3367c08f, -0x32744492,
-    -0x317900d5, -0x30761c17, -0x2f6bbe44, -0x2e5a106f,
-    -0x2d413ccc, -0x2c216eaa, -0x2afad268, -0x29cd9577,
-    -0x2899e649, -0x275ff452, -0x261feff9, -0x24da0a99,
-    -0x238e7673, -0x223d66a8, -0x20e70f32, -0x1f8ba4db,
-    -0x1e2b5d38, -0x1cc66e99, -0x1b5d1009, -0x19ef7943,
-    -0x187de2a6, -0x17088531, -0x158f9a75, -0x14135c94,
-    -0x1294062f, -0x1111d262, -0x0f8cfcbd, -0x0e05c135,
-    -0x0c7c5c1e, -0x0af10a22, -0x09640837, -0x07d59396,
-    -0x0645e9af, -0x04b54825, -0x0323ecbe, -0x0192155f,
-    +0x00000000, +0x0192155f, +0x0323ecbe, +0x04b54825,
-    +0x0645e9af, +0x07d59396, +0x09640837, +0x0af10a22,
-    +0x0c7c5c1e, +0x0e05c135, +0x0f8cfcbd, +0x1111d262,
-    +0x1294062f, +0x14135c94, +0x158f9a75, +0x17088531,
-    +0x187de2a6, +0x19ef7943, +0x1b5d1009, +0x1cc66e99,
-    +0x1e2b5d38, +0x1f8ba4db, +0x20e70f32, +0x223d66a8,
-    +0x238e7673, +0x24da0a99, +0x261feff9, +0x275ff452,
-    +0x2899e649, +0x29cd9577, +0x2afad268, +0x2c216eaa,
-    +0x2d413ccc, +0x2e5a106f, +0x2f6bbe44, +0x30761c17,
-    +0x317900d5, +0x32744492, +0x3367c08f, +0x34534f40,
-    +0x3536cc51, +0x361214af, +0x36e50689, +0x37af8158,
-    +0x387165e2, +0x392a9642, +0x39daf5e8, +0x3a8269a2,
-    +0x3b20d79d, +0x3bb6276d, +0x3c424209, +0x3cc511d8,
-    +0x3d3e82ad, +0x3dae81ce, +0x3e14fdf6, +0x3e71e758,
-    +0x3ec52f9f, +0x3f0ec9f4, +0x3f4eaafd, +0x3f84c8e1,
-    +0x3fb11b47, +0x3fd39b59, +0x3fec43c6, +0x3ffb10c0,
+    +0x40000000, +0x3ff7ea5d, +0x3fdfab80, +0x3fb74988, +0x3f7ecea9,
+    +0x3f364928, +0x3eddcb58, +0x3e756b94, +0x3dfd443a, +0x3d7573a6,
+    +0x3cde1c27, +0x3c3763f9, +0x3b81753c, +0x3abc7de6, +0x39e8afba,
+    +0x3906403a, +0x3815689d, +0x371665ba, +0x360977ff, +0x34eee35c,
+    +0x33c6ef37, +0x3291e654, +0x315016c7, +0x3001d1dc, +0x2ea76c08,
+    +0x2d413ccd, +0x2bcf9eaa, +0x2a52ef01, +0x28cb8dfd, +0x2739de82,
+    +0x259e4609, +0x23f92c8f, +0x224afc78, +0x20942272, +0x1ed50d5d,
+    +0x1d0e2e2b, +0x1b3ff7c9, +0x196adefc, +0x178f5a49, +0x15ade1d0,
+    +0x13c6ef37, +0x11dafd83, +0x0fea88fd, +0x0df60f12, +0x0bfe0e33,
+    +0x0a0305b4, +0x080575af, +0x0605dee0, +0x0404c287, +0x0202a246,
+    +0x00000000, -0x0202a246, -0x0404c287, -0x0605dee0, -0x080575af,
+    -0x0a0305b4, -0x0bfe0e33, -0x0df60f12, -0x0fea88fd, -0x11dafd83,
+    -0x13c6ef37, -0x15ade1d0, -0x178f5a49, -0x196adefc, -0x1b3ff7c9,
+    -0x1d0e2e2b, -0x1ed50d5d, -0x20942272, -0x224afc78, -0x23f92c8f,
+    -0x259e4609, -0x2739de82, -0x28cb8dfd, -0x2a52ef01, -0x2bcf9eaa,
+    -0x2d413ccd, -0x2ea76c08, -0x3001d1dc, -0x315016c7, -0x3291e654,
+    -0x33c6ef37, -0x34eee35c, -0x360977ff, -0x371665ba, -0x3815689d,
+    -0x3906403a, -0x39e8afba, -0x3abc7de6, -0x3b81753c, -0x3c3763f9,
+    -0x3cde1c27, -0x3d7573a6, -0x3dfd443a, -0x3e756b94, -0x3eddcb58,
+    -0x3f364928, -0x3f7ecea9, -0x3fb74988, -0x3fdfab80, -0x3ff7ea5d,
+    -0x40000000, -0x3ff7ea5d, -0x3fdfab80, -0x3fb74988, -0x3f7ecea9,
+    -0x3f364928, -0x3eddcb58, -0x3e756b94, -0x3dfd443a, -0x3d7573a6,
+    -0x3cde1c27, -0x3c3763f9, -0x3b81753c, -0x3abc7de6, -0x39e8afba,
+    -0x3906403a, -0x3815689d, -0x371665ba, -0x360977ff, -0x34eee35c,
+    -0x33c6ef37, -0x3291e654, -0x315016c7, -0x3001d1dc, -0x2ea76c08,
+    -0x2d413ccd, -0x2bcf9eaa, -0x2a52ef01, -0x28cb8dfd, -0x2739de82,
+    -0x259e4609, -0x23f92c8f, -0x224afc78, -0x20942272, -0x1ed50d5d,
+    -0x1d0e2e2b, -0x1b3ff7c9, -0x196adefc, -0x178f5a49, -0x15ade1d0,
+    -0x13c6ef37, -0x11dafd83, -0x0fea88fd, -0x0df60f12, -0x0bfe0e33,
+    -0x0a0305b4, -0x080575af, -0x0605dee0, -0x0404c287, -0x0202a246,
+    +0x00000000, +0x0202a246, +0x0404c287, +0x0605dee0, +0x080575af,
+    +0x0a0305b4, +0x0bfe0e33, +0x0df60f12, +0x0fea88fd, +0x11dafd83,
+    +0x13c6ef37, +0x15ade1d0, +0x178f5a49, +0x196adefc, +0x1b3ff7c9,
+    +0x1d0e2e2b, +0x1ed50d5d, +0x20942272, +0x224afc78, +0x23f92c8f,
+    +0x259e4609, +0x2739de82, +0x28cb8dfd, +0x2a52ef01, +0x2bcf9eaa,
+    +0x2d413ccd, +0x2ea76c08, +0x3001d1dc, +0x315016c7, +0x3291e654,
+    +0x33c6ef37, +0x34eee35c, +0x360977ff, +0x371665ba, +0x3815689d,
+    +0x3906403a, +0x39e8afba, +0x3abc7de6, +0x3b81753c, +0x3c3763f9,
+    +0x3cde1c27, +0x3d7573a6, +0x3dfd443a, +0x3e756b94, +0x3eddcb58,
+    +0x3f364928, +0x3f7ecea9, +0x3fb74988, +0x3fdfab80, +0x3ff7ea5d,
 };
 
 /* 1st local oscillator look-up table (subsampled sine lut values) */
 static int32_t i_lut[elems(cos_lut)], q_lut[elems(cos_lut)];
-/* current band */
-static int curr_band;
+/* currently set band, currently used band */
+static int set_band, curr_band = 25;
+
+/* update mixing arrays according to current band selection */
+static void LOOP_UNROLL OPTIMIZE("O3") Mix1_UpdateArrays(int band)
+{
+    /* index counters */
+    int i_cnt = 0, q_cnt = elems(cos_lut) / 4;
+    /* number of bits to be shifted */
+    const int bits = RF_SAMPLING_BITS;
+    /* rounding factor to be added before truncation */
+    const int32_t rounding_f = 1 << (bits - 1);
+
+    /* setup luts for in-phase and quadrature components. in-phase = 
+     * cos(band * t), quadrature = -sin(band * t) this results in the 
+     * complex oscillator in form x(t) = exp(-2j * pi * t). the minus sign in 
+     * front of the '-2j' denotes that mixing with this oscillator will bring 
+     * the positive frequencies down to near DC. */
+    for (int i = 0; i < elems(cos_lut); i++) {
+        /* write another entry */
+        i_lut[i] = (cos_lut[i_cnt] + rounding_f) >> bits;  
+        q_lut[i] = (cos_lut[q_cnt] + rounding_f) >> bits;
+        /* increment the coutners and wrap around if needed */
+        if ((i_cnt += band) >= elems(cos_lut)) i_cnt -= elems(cos_lut);
+        if ((q_cnt += band) >= elems(cos_lut)) q_cnt -= elems(cos_lut);
+    }
+}
 
 /* mix the rf signal with the local oscillator, rf is assumed to be of length 
  * equal to the length of the local oscillator lut */
-static void LOOP_UNROLL OPTIMIZE("O3") Mix1_Iter(const int16_t *rf, int16_t *i, 
-    int16_t *q)
+static void LOOP_UNROLL OPTIMIZE("O3") Mix1_Iter(const int16_t * restrict rf, 
+    int16_t * restrict i, int16_t * restrict q)
 {
     /* mix the incoming signals with the complex local oscillator. the lo lut 
      * entries are prepared in such a way that the multiplication results in 
@@ -108,6 +110,7 @@ static void LOOP_UNROLL OPTIMIZE("O3") Mix1_Iter(const int16_t *rf, int16_t *i,
      * then will be convertoed to a tone by 2nd stage mixing. This is obviously 
      * undesirable */
     const int bshift = 31 - DEC_MAX_INPUT_BITS - 1;
+    /* rounding factor */
     const uint32_t rounding_f = 1 << (bshift - 1);
 
     /* do the actual mixing, normalize by rounding and shifting */
@@ -118,13 +121,17 @@ static void LOOP_UNROLL OPTIMIZE("O3") Mix1_Iter(const int16_t *rf, int16_t *i,
 }
 
 /* mix the incoming rf signal by mixing it with lo */
-void Mix1_Mix(const int16_t *rf, int num, int16_t *i, int16_t *q)
+void OPTIMIZE("O3") Mix1_Mix(const int16_t *rf, int num, int16_t *i, int16_t *q)
 {
     /* assert on the number of elements */
-    assert(num % elems(i_lut) == 0, 
+    assert(num % elems(cos_lut) == 0, 
         "number of samples not divisible by lut length", num);
+    
+    /* update the arrays if the frequency setting has changed */
+    Mix1_UpdateArrays(set_band);
+
     /* mix with local oscillator */
-    for (int cnt = 0; cnt < num; cnt += elems(i_lut))
+    for (int cnt = 0; cnt < num; cnt += elems(cos_lut))
         Mix1_Iter(rf + cnt, i + cnt, q + cnt);
 }
 
@@ -135,31 +142,13 @@ float Mix1_SetLOFrequency(float f)
     const float band_spacing = (float)RF_SAMPLING_FREQ / elems(cos_lut);
     /* get the actual band that we are about to select for the 1st lo */
     int band = fp_round(f / band_spacing);
-
-    /* rounding factor to be added before truncation */
-    const int32_t rounding_f = 1 << (RF_SAMPLING_BITS - 1);
     
     /* sanity check */
     assert(band >= 0 && band <= elems(cos_lut) / 2, 
         "unsupported band for mix1", band);
-
-    /* setup luts for in-phase and quadrature components. in-phase = 
-     * cos(band * t), quadrature = -sin(band * t) this results in the 
-     * complex oscillator in form x(t) = exp(-2j * pi * t). the minus sign in 
-     * front of the '-2j' denotes that mixing with this oscillator will bring 
-     * the positive frequencies down to near DC. */
-    for (int i = 0; i < elems(cos_lut); i++) {
-        /* add rounding factor and shift by the number of bits that rf samples 
-         * are represented on to make space for them during multiplication 
-         * (or mixing, if you like)*/
-        i_lut[i] = (cos_lut[(i * band) & (elems(cos_lut) - 1)] + 
-            rounding_f) >> RF_SAMPLING_BITS;
-        q_lut[i] = (cos_lut[(elems(cos_lut) / 4 + i * band) & 
-            (elems(cos_lut) - 1)] + rounding_f) >> RF_SAMPLING_BITS;
-    }
-    
+        
     /* store current band */
-    curr_band = band;
+    set_band = band;
     /* return the actual frequency */
     return band * band_spacing;
 }

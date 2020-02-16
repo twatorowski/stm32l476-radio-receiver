@@ -10,7 +10,6 @@
 #include "assert.h"
 #include "err.h"
 #include "dev/dec.h"
-#include "dev/watchdog.h"
 #include "dsp/float_fixp.h"
 #include "stm32l476/rcc.h"
 #include "stm32l476/dfsdm.h"
@@ -18,11 +17,15 @@
 #include "stm32l476/nvic.h"
 #include "sys/critical.h"
 #include "sys/cb.h"
+#include "sys/sem.h"
 #include "util/elems.h"
 #include "util/msblsb.h"
 
 #define DEBUG
 #include "debug.h"
+
+/* decimator semaphore */
+sem_t dec_sem;
 
 /* callback */
 static volatile cb_t callback;
@@ -34,13 +37,16 @@ static union {int32_t *i32; float *fl; } samples_i, samples_q;
 static int samples_num;
 
 /* decimation dma interrupt */
-void OPTIMIZE("O3") Dec_DMA1C4Isr(void)
+void OPTIMIZE("O0") Dec_DMA1C4Isr(void)
 {
     /* synchronize both channels */
-    while ((DMA1->ISR & (DMA_ISR_GIF4 | DMA_ISR_GIF5)) != 
-        (DMA_ISR_GIF4 | DMA_ISR_GIF5));
+    while ((DMA1->ISR & (DMA_ISR_TCIF4 | DMA_ISR_TCIF5)) != 
+        (DMA_ISR_TCIF4 | DMA_ISR_TCIF5));
     /* clear flags */
-    DMA1->IFCR = DMA_IFCR_CTCIF4 | DMA_IFCR_CTCIF5;
+    DMA1->IFCR = DMA_ISR_TCIF4 | DMA_ISR_TCIF5;
+
+    /* disable the interrupt */
+	NVIC_DISABLEINT(STM32_INT_DMA1C4);
 
     /* convert fixed point notation to floating point */
     FloatFixp_Fixp32ToFloat(samples_i.i32, samples_num, 31, samples_i.fl);
@@ -73,13 +79,13 @@ int Dec_Init(void)
 
 	/* use dma2c7 for pushing data into I decimator */
 	DMA2C7->CCR = DMA_CCR_MEM2MEM | DMA_CCR_DIR | DMA_CCR_MINC |
-			DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1;
+			DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0;
 	/* set destination register */
 	DMA2C7->CPAR = (uint32_t)&DFSDMC0->CHDATINR;
 
     /* use dma2c2 for pushing data into Q decimator */
 	DMA2C2->CCR = DMA_CCR_MEM2MEM | DMA_CCR_DIR | DMA_CCR_MINC |
-			DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1;
+			DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0;
 	/* set destination register */
 	DMA2C2->CPAR = (uint32_t)&DFSDMC1->CHDATINR;
 
@@ -101,30 +107,32 @@ int Dec_Init(void)
 
 	/* set interrupt priority */
 	NVIC_SETINTPRI(STM32_INT_DMA1C4, INT_PRI_DEC);
-	/* enable interrupt */
-	NVIC_ENABLEINT(STM32_INT_DMA1C4);
+
+    /* this is prepared for only one decimation rate */
+    assert(DEC_DECIMATION_RATE == 50, "unsupported decimation factor",
+        DEC_DECIMATION_RATE);
 
 	/* enable interface */
 	DFSDMC0->CHCFGR1 |= DFSDM_CHCFGR1_DFSDMEN;
 
 	/* 0th channel: I data input */
-	/* configure for parallel data input */
-	DFSDMC0->CHCFGR1 |= DFSDM_CHCFGR1_DATMPX_1 | DFSDM_CHCFGR1_DATPACK_0;
+	/* configure for single data input */
+	DFSDMC0->CHCFGR1 |= DFSDM_CHCFGR1_DATMPX_1;
 	/* configure offset and bit shift  */
 	DFSDMC0->CHCFGR2 |= 8 << LSB(DFSDM_CHCFGR2_DTRBS);
 	/* enable channel */
 	DFSDMC0->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
 
     /* 1st channel: Q data input */
-	/* configure for parallel data input */
-	DFSDMC1->CHCFGR1 |= DFSDM_CHCFGR1_DATMPX_1 | DFSDM_CHCFGR1_DATPACK_0;
+	/* configure for single data input */
+	DFSDMC1->CHCFGR1 |= DFSDM_CHCFGR1_DATMPX_1;
 	/* configure offset and bit shift  */
 	DFSDMC1->CHCFGR2 |= 8 << LSB(DFSDM_CHCFGR2_DTRBS);
 	/* enable channel */
 	DFSDMC1->CHCFGR1 |= DFSDM_CHCFGR1_CHEN;
 
-	/* 0th Filter: mapped to channel 0 (I samples), decimation by 64, sinc^4
-	 * filter, bit growth = N*log2(R) = 3 * log2(64) = 18, output data width =
+	/* 0th Filter: mapped to channel 0 (I samples), decimation by 50, sinc^4
+	 * filter, bit growth = N*log2(R) = 3 * log2(50) ~= 18, output data width =
 	 * input data width + bit growth = 14b + 18b = 32b, but since the output
 	 * register can only handle 24 bit data we need to shift by 6 (done in
 	 * input channel configuration) */
@@ -132,7 +140,7 @@ int Dec_Init(void)
 	DFSDMF0->CR1 &= ~DFSDM_CR1_DFEN;
 	/* enable fast conversion, enable dma requests  */
 	DFSDMF0->CR1 = DFSDM_CR1_FAST | DFSDM_CR1_RDMAEN;
-	/* sinc^3 filter, decimation by 64, no integration */
+	/* sinc^3 filter, decimation by 50, no integration */
 	DFSDMF0->FCR = DFSDM_FCR_FORD_1 | DFSDM_FCR_FORD_0 |
         (DEC_DECIMATION_RATE - 1) << LSB(DFSDM_FCR_FOSR) | 
         0 << LSB(DFSDM_FCR_IOSR);
@@ -141,8 +149,8 @@ int Dec_Init(void)
 	/* enable filtering */
 	DFSDMF0->CR1 |= DFSDM_CR1_DFEN;
 
-	/* 1st Filter: mapped to channel 1 (Q samples), decimation by 64, sinc^3
-	 * filter, bit growth = N*log2(R) = 3 * log2(64) = 18, output data width =
+	/* 1st Filter: mapped to channel 1 (Q samples), decimation by 50, sinc^3
+	 * filter, bit growth = N*log2(R) = 3 * log2(50) ~= 18, output data width =
 	 * input data width + bit growth = 14b + 18b = 32b, but since the output
 	 * register can only handle 24 bit data we need to shift by 8 (done in
 	 * input channel configuration) */
@@ -150,7 +158,7 @@ int Dec_Init(void)
 	DFSDMF1->CR1 &= ~DFSDM_CR1_DFEN;
 	/* enable fast conversion, enable dma requests  */
 	DFSDMF1->CR1 = DFSDM_CR1_FAST | DFSDM_CR1_RDMAEN;
-	/* sinc^3 filter, decimation by 64, no integration */
+	/* sinc^3 filter, decimation by 50, no integration */
 	DFSDMF1->FCR = DFSDM_FCR_FORD_1 | DFSDM_FCR_FORD_0  | 
         (DEC_DECIMATION_RATE - 1) << LSB(DFSDM_FCR_FOSR) |
         0 << LSB(DFSDM_FCR_IOSR);
@@ -165,8 +173,9 @@ int Dec_Init(void)
 	/* initialize filter, this needs to be done because filter is not willing to
 	 * output any data before it's integrators and combs are filled (decimation
 	 * factor * filter order samples are needed) */
-	for (int i = 0; i < 32 * 4; i++)
-		DFSDMC0->CHDATINR = 0, DFSDMC1->CHDATINR = 0;
+	for (int i = 0; i < DEC_DECIMATION_RATE *50; i++) {
+		DFSDMC1->CHDATINR = 0; DFSDMC0->CHDATINR = 0; 
+    }
 
     /* sanity check */
     assert(sizeof(int32_t) == sizeof(float), 
@@ -174,6 +183,9 @@ int Dec_Init(void)
 
 	/* exit critical section */
 	Critical_Exit();
+
+    /* release the device */
+    Sem_Release(&dec_sem);
 
 	/* report status */
 	return EOK;
@@ -193,9 +205,10 @@ dec_cbarg_t * Dec_Decimate(const int16_t *i, const int16_t *q, int num,
     /* store the output buffer pointers */
     samples_i.fl = i_out, samples_q.fl = q_out;
 
-    /* sanity check */
-    assert((uintptr_t)i % 4 == 0 && (uintptr_t)q % 4 == 0, 
-        "input data address is not aligned", 0);
+    /* sanity check for the number of samples */
+    assert(samples_num * DEC_DECIMATION_RATE == num, 
+        "number of samples is not divisible by the decimation factor", 
+        num);
 
 	/* prepare output dma for I samples */
 	DMA1C4->CCR &= ~DMA_CCR_EN;
@@ -220,7 +233,7 @@ dec_cbarg_t * Dec_Decimate(const int16_t *i, const int16_t *q, int num,
 	/* set source pointer */
 	DMA2C7->CMAR = (uint32_t)(i);
 	/* set the number of samples */
-	DMA2C7->CNDTR = num / 2;
+	DMA2C7->CNDTR = num;
 	/* enable dma */
 	DMA2C7->CCR |= DMA_CCR_EN;
 
@@ -229,9 +242,12 @@ dec_cbarg_t * Dec_Decimate(const int16_t *i, const int16_t *q, int num,
 	/* set source pointer */
 	DMA2C2->CMAR = (uint32_t)(q);
 	/* set the number of samples */
-	DMA2C2->CNDTR = num / 2;
+	DMA2C2->CNDTR = num;
 	/* enable dma */
 	DMA2C2->CCR |= DMA_CCR_EN;
+
+    /* enable the interrupt */
+	NVIC_ENABLEINT(STM32_INT_DMA1C4);
 
 	/* sync call was made? */
 	while (sync && callback == CB_SYNC);

@@ -13,6 +13,10 @@
 #include <stdint.h>
 
 #include "sys/cb.h"
+#include "sys/sem.h"
+
+/* decimator semaphore */
+extern sem_t dec_sem;
 
 /** @brief decimation callback argument type */
 typedef struct dec_cbarg {

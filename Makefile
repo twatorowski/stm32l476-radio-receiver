@@ -43,7 +43,7 @@ SRC += ./base64/src/base64.c
 # device drivers
 SRC += ./dev/src/usart2.c ./dev/src/watchdog.c
 SRC += ./dev/src/cpuclock.c ./dev/src/fpu.c
-SRC += ./dev/src/analog.c ./dev/src/i2c1.c
+SRC += ./dev/src/i2c1.c
 SRC += ./dev/src/cs43l22.c ./dev/src/rfin.c
 SRC += ./dev/src/sai1a.c ./dev/src/display.c
 SRC += ./dev/src/extimux.c ./dev/src/joystick.c
@@ -51,6 +51,10 @@ SRC += ./dev/src/await.c ./dev/src/systime.c
 SRC += ./dev/src/timemeas.c ./dev/src/led.c
 SRC += ./dev/src/invoke.c ./dev/src/lsi.c
 SRC += ./dev/src/dec.c
+
+SRC += ./dev/src/usb.c ./dev/src/usbcore.c
+SRC += ./dev/src/usbdesc.c ./dev/src/usb_vcp.c
+SRC += ./dev/src/usb_audiosrc.c
 
 # digital signal processing
 SRC += ./dsp/src/biquad.c
@@ -62,12 +66,15 @@ SRC += ./radio/src/radio.c ./radio/src/dec4.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
-SRC += ./sys/src/sem.c
+SRC += ./sys/src/sem.c ./sys/src/idle.c
 
 # tests
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
+SRC += ./test/src/vcp.c ./test/src/vcp_rate.c
+SRC += ./test/src/rfin.c ./test/src/rf_dec.c
+SRC += ./test/src/rf_dec_usb.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

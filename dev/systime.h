@@ -26,6 +26,15 @@ int SysTime_Init(void);
  */
 void SysTime_Delay(uint32_t ms);
 
+/* return the system timer value */
+
+/**
+ * @brief return the system timer value
+ * 
+ * @return uint32_t timer value
+ */
+uint32_t SysTime_GetTime(void);
+
 /**
  * @brief Sets current system timer value 
  * 

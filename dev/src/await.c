@@ -124,9 +124,9 @@ int Await_Init(void)
     RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
 
     /* set the prescaler value */
-    TIM3->PSC = 4799;
+    TIM3->PSC = (CPUCLOCK_FREQ / 1000000) - 1;
     /* 1ms pulse */
-    TIM3->ARR = 10;
+    TIM3->ARR = 999;
     /* do not react to artificially generated update events */
     TIM3->CR1 = TIM_CR1_URS | TIM_CR1_OPM;
     /* apply the prescaler value */

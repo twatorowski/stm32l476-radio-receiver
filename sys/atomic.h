@@ -62,7 +62,43 @@ static inline ALWAYS_INLINE uint32_t Atomic_ADD32(void *dst, uint32_t value)
  * 
  * @return uint32_t value under *dst before ANDing
  */
-static inline ALWAYS_INLINE uint32_t Atomic_AND32(void *dst, uint32_t value)
+static inline ALWAYS_INLINE uint32_t Atomic_AND32(volatile void *dst, 
+    uint32_t value)
+{
+	/* previous value */
+	uint32_t val;
+
+	/* loop until operation succeeds */
+	do {
+		/* read current value */
+		val = Arch_LDREX((void *)dst);
+	/* try to write back */
+	} while (Arch_STREX((void *)dst, val & value));
+
+    /* return the value as it was before the operation */
+	return val;
+}
+
+
+/*TODO: */
+static inline ALWAYS_INLINE uint32_t Atomic_AND(uint32_t value, 
+    volatile void *dst)
+{
+	/* previous value */
+	uint32_t val;
+
+	/* loop until operation succeeds */
+	do {
+		/* read current value */
+		val = Arch_LDREX((void *)dst);
+	/* try to write back */
+	} while (Arch_STREX((void *)dst, val & value));
+
+    /* return the value as it was before the operation */
+	return val;
+}
+//TODO:
+static inline ALWAYS_INLINE uint32_t Atomic_OR(uint32_t value, volatile void *dst)
 {
 	/* previous value */
 	uint32_t val;
@@ -72,11 +108,13 @@ static inline ALWAYS_INLINE uint32_t Atomic_AND32(void *dst, uint32_t value)
 		/* read current value */
 		val = Arch_LDREX(dst);
 	/* try to write back */
-	} while (Arch_STREX(dst, val & value));
+	} while (Arch_STREX(dst, val | value));
 
     /* return the value as it was before the operation */
 	return val;
 }
+
+
 
 /**
  * @brief OR value from *dst with `value`. Ensures atomicity of the operation.
@@ -86,7 +124,8 @@ static inline ALWAYS_INLINE uint32_t Atomic_AND32(void *dst, uint32_t value)
  * 
  * @return uint32_t value under *dst before ORing
  */
-static inline ALWAYS_INLINE uint32_t Atomic_OR32(void *dst, uint32_t value)
+static inline ALWAYS_INLINE uint32_t Atomic_OR32(volatile void *dst, 
+    uint32_t value)
 {
 	/* previous value */
 	uint32_t val;
@@ -110,7 +149,7 @@ static inline ALWAYS_INLINE uint32_t Atomic_OR32(void *dst, uint32_t value)
  * 
  * @return uint32_t value under *dst before XORing
  */
-static inline ALWAYS_INLINE uint32_t Atomic_XOR32(void *dst, uint32_t value)
+static inline ALWAYS_INLINE uint32_t Atomic_XOR32(volatile void *dst, uint32_t value)
 {
 	/* previous value */
 	uint32_t val;

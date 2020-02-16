@@ -17,15 +17,17 @@
 #include "stm32l476/stm32l476.h"
 
 /* includes with interrupt/exceptions handlers */
-#include "dev/analog.h"
 #include "dev/await.h"
 #include "dev/dec.h"
+#include "dev/display.h"
 #include "dev/extimux.h"
 #include "dev/i2c1.h"
 #include "dev/invoke.h"
 #include "dev/joystick.h"
+#include "dev/rfin.h"
 #include "dev/sai1a.h"
 #include "dev/usart2.h"
+#include "dev/usb.h"
 
 /* shorthands so that the vector table looks neat! */
 #define SET_SP(sp)                  [STM32_VECTOR_STACK_PTR_BASE].v = sp
@@ -44,13 +46,16 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     SET_EXC_VEC(STM32_EXC_HARDFAULT, DefHndl_DefaultHandler),
 
     /* interrupts */
+    /* watchog uses the default handler */
+    SET_INT_VEC(STM32_INT_WWDG, DefHndl_DefaultHandler),
+
     /* usart2 */
     SET_INT_VEC(STM32_INT_USART2, USART2_USART2Isr),
     SET_INT_VEC(STM32_INT_DMA1C7, USART2_DMA1C7Isr),
     SET_INT_VEC(STM32_INT_DMA1C6, USART2_DMA1C6Isr),
 
     /* ADC sampler */
-    SET_INT_VEC(STM32_INT_DMA1C1, Analog_DMA1C1Isr),
+    SET_INT_VEC(STM32_INT_DMA1C1, RFIn_DMA1C1Isr),
 
     /* decimators */
     SET_INT_VEC(STM32_INT_DMA1C4, Dec_DMA1C4Isr),
@@ -73,4 +78,10 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
 
     /* invoke module */
     SET_INT_VEC(STM32_INT_FMC, Invoke_FMCIsr),
+
+    /* usb module */
+    SET_INT_VEC(STM32_INT_OTG_FS, USB_OTGFSIsr),
+
+    /* display module */
+    SET_INT_VEC(STM32_INT_LCD, Display_LCDIsr),
 };

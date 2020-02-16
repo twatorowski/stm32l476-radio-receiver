@@ -11,11 +11,20 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "config.h"
 #include "err.h"
 #include "stm32l476/rcc.h"
 #include "stm32l476/gpio.h"
 #include "stm32l476/lcd.h"
+#include "stm32l476/nvic.h"
+#include "sys/cb.h"
 #include "sys/critical.h"
+#include "sys/sem.h"
+
+/* semaphore */
+sem_t display_sem;
+/* callback */
+static volatile cb_t callback;
 
 /* digits: 0 - 9 */
 static const uint16_t digs[] = {
@@ -71,6 +80,21 @@ static void Display_SetDisplay(int pos, uint16_t v)
 		/* shift nibble */
 		v = v << 4;
 	}
+}
+
+/* lcd interrupt */
+void Display_LCDIsr(void)
+{
+    /* clear the interrupt */
+    LCD->CLR = LCD_CLR_UDDC;
+
+    /* call callback */
+    if (callback == CB_SYNC) {
+        callback = CB_NONE;
+    /* async call was made? */
+    } else if (callback != CB_NONE) {
+        callback(0);
+    }
 }
 
 /* initialize display */
@@ -152,12 +176,21 @@ int Display_Init(void)
 	/* set up frame register: pulse on = 1/4, no dead time, contrast = 5,
 	 * blink = flcd / 32, divider = 31, prescaler = 1 */
 	LCD->FCR = LCD_FCR_PON_2 | LCD_FCR_CC_2 | LCD_FCR_CC_0 | LCD_FCR_BLINKF_1 |
-			LCD_FCR_DIV;
+			LCD_FCR_DIV | LCD_FCR_UDDIE;
 	/* enable */
 	LCD->CR |= LCD_CR_LCDEN;
 
+    /* set the priority */
+    NVIC_SETINTPRI(STM32_INT_LCD, INT_PRI_LCD);
+    /* enable the display interrutp */
+    NVIC_ENABLEINT(STM32_INT_LCD);
+
 	/* exit critical section */
 	Critical_Exit();
+
+    /* release the device */
+    Sem_Release(&display_sem);
+
 	/* report status */
 	return EOK;
 }
@@ -177,18 +210,26 @@ void Display_SetCharacter(int pos, char c)
 		/* get value */
 		val = lets[c - 'A'];
 	}
-
     /* set character at given position */
 	Display_SetDisplay(pos, val);
 }
 
 /* update display */
-void Display_Update(void)
+void * Display_Update(cb_t cb)
 {
+    /* sync call was made? */
+    int sync = cb == CB_SYNC;
+
+    /* store callback */
+    callback = cb;
+
 	/* clear flag */
 	LCD->CLR = LCD_CLR_UDDC;
 	/* transfer ram contents to display */
 	LCD->SR = LCD_SR_UDR;
-	/* wait for previous transfer to be completed */
-	while (!(LCD->SR & LCD_SR_UDD));
+
+    /* synchronous call waitstate */
+    while (sync && callback == CB_SYNC);
+    /* no callback argument is provided */
+    return 0;
 }

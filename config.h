@@ -28,9 +28,9 @@
 /** @name System CPU Frequency */
 /** @{ */
 /** @brief reference oscillator speed (hse or it's prescaled version) */
-#define CPUCLOCK_REF_FREQ                           8000000
+#define CPUCLOCK_REF_FREQ                           4000000
 /** @brief system frequency in Hz */
-#define CPUCLOCK_FREQ							    80000000
+#define CPUCLOCK_FREQ							    72000000
 /** @} */
 
 /** @name Debug configuration */
@@ -71,18 +71,18 @@
 /** @{ */
 /** @brief disable/enable led globally */
 #define LED_ENABLE                                  1
+/** @brief show cpu activity on led    */
+#define LED_IDLE_SHOW_ACTIVITY                      1
 /** @} */
 
 /** @name Interrupt Priorities */
 /** @{ */
 /** @brief data received callback priority (0x00 - highest, 0xf0 lowest) */
-#define INT_PRI_USART2_RX						    0x20
+#define INT_PRI_USART2_RX						    0xf0
 /** @brief data sent callback priority (0x00 - highest, 0xf0 lowest) */
 #define INT_PRI_USART2_TX						    0xf0
-/** @brief async delay priority */
-#define INT_PRI_AWAIT                               0xf0
-/** @brief external voltage monitor interrupt priority */
-#define INT_PRI_VIN                                 0xf0
+/** @brief rf sampling priority */
+#define INT_PRI_RFIN                                0x30
 /** @brief decimator interrupt priority */
 #define INT_PRI_DEC                                 0x20    
 /** @brief exti multiplexer interrupt priority for exti[5-9] */
@@ -91,20 +91,18 @@
 #define INT_PRI_EXI10_15                            0xf0
 /** @brief invoke interrupt priority */
 #define INT_PRI_INVOKE                              0x50
+/** @brief async delay priority */
+#define INT_PRI_AWAIT                               0x10
+/** @brief USB priority */
+#define INT_PRI_USB                                 0x20
+/** @brief LCD priority */
+#define INT_PRI_LCD                                 0xf0
 /** @} */
 
 /** @name USART2 configuration */
 /** @{ */
 /** @brief usart baudrate */
 #define USART2_BAUD_RATE                            1500000
-/** @} */
-
-/** @name IQ Decimators */
-/** @{ */
-/** @brief decimation rate, must be a power of 2 */
-#define DEC_DECIMATION_RATE                         64
-/** maximal input word bit width */
-#define DEC_MAX_INPUT_BITS                          14
 /** @} */
 
 /** @name CS43L22 configuration */
@@ -116,9 +114,66 @@
 /** @name RF paramaters  */
 /** @{ */
 /** @brief Sampling frequency */
-#define RF_SAMPLING_FREQ                            2500000
+#define RF_SAMPLING_FREQ                            2400000
 /** @define number of bits per rf sample */
 #define RF_SAMPLING_BITS                            12
+/** @} */
+
+/** @name IQ Decimators */
+/** @{ */
+/** @brief decimation rate */
+#define DEC_DECIMATION_RATE                         50
+/** maximal input word bit width */
+#define DEC_MAX_INPUT_BITS                          14
+/** @} */
+
+/** @name Baseband Sampling rate (after the decimation) */
+/** @{ */
+/** @brief decimation rate */
+#define BB_SAMPLING_RATE                            \
+    (RF_SAMPLING_FREQ / DEC_DECIMATION_RATE)
+
+/** @name SAI1 configuration */
+/** @{ */
+/** @brief serial audio interface sampling rate */
+#define SAI1_SAMPLING_RATE                          BB_SAMPLING_RATE
+/** */
+/** @} */
+
+/** @name USB module */
+/** @{ */
+/** @brief use the true serial number */
+#define USB_SN_SIZE                                 58
+/** @brief control endpoint max size (bidirectional) */
+#define USB_CTRLEP_SIZE                             64
+/** @brief interrupt endpoint transfer size (must be a power of 2) */
+#define USB_VCP_INT_SIZE                            8
+/** @brief transmission packet size (must be a power of 2) */
+#define USB_VCP_TX_SIZE                             32
+/** @brief reception packet size (must be a power of 2) */
+#define USB_VCP_RX_SIZE                             32
+/** @brief usb audio sampling rate */
+#define USB_AUDIO_SRC_SAMPLING_RATE                 BB_SAMPLING_RATE
+/** @brief usb audio frame rate */
+#define USB_AUDIO_SRC_FRAME_RATE                    1000
+/** @brief usb audio sampling rate */
+#define USB_AUDIO_SRC_SAMPLES_PER_FRAME             \
+    (USB_AUDIO_SRC_SAMPLING_RATE / USB_AUDIO_SRC_FRAME_RATE)
+/** @brief usb audio: bits per sample (8, 16, 24, 32) */
+#define USB_AUDIO_SRC_BITS_PER_SAMPLE               32
+/** @brief usb audio frame size: mono mode */
+#define USB_AUDIO_SRC_MONO_SIZE                     \
+    (1 * USB_AUDIO_SRC_SAMPLING_RATE * USB_AUDIO_SRC_BITS_PER_SAMPLE / \
+     USB_AUDIO_SRC_FRAME_RATE / 8)
+/** @brief usb audio frame size: stereo mode */
+#define USB_AUDIO_SRC_STEREO_SIZE                   \
+    (2 * USB_AUDIO_SRC_SAMPLING_RATE * USB_AUDIO_SRC_BITS_PER_SAMPLE / \
+     USB_AUDIO_SRC_FRAME_RATE / 8)
+/** @brief usb audio max transfer size */
+#define USB_AUDIO_SRC_MAX_TFER_SIZE                 512
+/** @brief usb uses common fifo for reception so we need to set it's size to 
+ * hold the largest packet possible */
+#define USB_RX_FIFO_SIZE                            512
 /** @} */
 
 

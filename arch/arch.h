@@ -29,7 +29,7 @@ static inline ALWAYS_INLINE void Arch_NOP(void)
  * @param src source address to load from. must be 32-bit aligned
  * @return 32-bit value present at address @p ptr
  */
-static inline ALWAYS_INLINE uint32_t Arch_LDREX(void *src)
+static inline ALWAYS_INLINE uint32_t Arch_LDREX(volatile void *src)
 {
 	/* result */
 	uint32_t result;
@@ -55,7 +55,7 @@ static inline ALWAYS_INLINE uint32_t Arch_LDREX(void *src)
  * @param value value to be stored
  * @return 0 in case of success, 1 otherwise
  */
-static inline ALWAYS_INLINE int Arch_STREX(void *dst, uint32_t value)
+static inline ALWAYS_INLINE int Arch_STREX(volatile void *dst, uint32_t value)
 {
 	/* storage result */
 	int result;
@@ -98,7 +98,7 @@ static inline ALWAYS_INLINE void Arch_ISB(void)
  *
  * @param x value to be written
  */
-static inline ALWAYS_INLINE void Arch_WriteBasepri(uint32_t x)
+static inline ALWAYS_INLINE void Arch_WriteBasepri(int x)
 {
 	/* assembly code */
 	ASM volatile (

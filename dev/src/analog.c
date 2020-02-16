@@ -53,6 +53,7 @@ void Analog_DMA1C1Isr(void)
 	/* notify others */
 	Ev_Notify(&analog_ev, &ea);
 }
+
 /* initialize adc */
 int Analog_Init(void)
 {
@@ -85,15 +86,6 @@ int Analog_Init(void)
 	TIM2->CR1 = TIM_CR1_URS;
 	/* apply prescaler setting */
 	TIM2->EGR = TIM_EGR_UG;
-
-    // TIM2->ARR = 79;
-    // TIM2->CCR1 = 70;
-    // TIM2->CCMR1 = TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
-    // TIM2->CCER = TIM_CCER_CC1E;
-    // GPIOA->MODER &= ~GPIO_MODER_MODER0; 
-    // GPIOA->AFRL |= 1 << 0;
-    // GPIOA->MODER |= GPIO_MODER_MODER0_1;
-    // GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEEDR0;
 
 	/* select dma channel */
 	DMA1->CSELR = (DMA1->CSELR & ~DMA_CSELR_C1S) | DMA1_CSELR_C1S_ADC1;
@@ -131,9 +123,6 @@ int Analog_Init(void)
 	 * mode */
 	ADC1->CFGR = ADC_CFGR_OVRMOD | ADC_CFGR_EXTSEL_TIM2_TRGO | ADC_CFGR_DMAEN |
 			ADC_CFGR_EXTEN_RE | ADC_CFGR_DMACFG;
-	// /* enable oversampling: 2x, shift by 1 bit */
-	// ADC1->CFGR2 = ADC_CFGR2_TROVS | 1 << LSB(ADC_CFGR2_OVSS) | 
-    //     0 << LSB(ADC_CFGR2_OVSR) | ADC_CFGR2_ROVSE;
 
 	/* clear ready flag */
 	ADC1->ISR = ADC_ISR_ADRDY;

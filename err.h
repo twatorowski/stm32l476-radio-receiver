@@ -51,6 +51,13 @@
 /** @} */
 
 
+/** @name USB error codes */
+/** @{ */
+/** @brief usb reset has occurred */
+#define EUSB_RESET                              -40
+/** @} */
+
+
 /** @} */
 
 
