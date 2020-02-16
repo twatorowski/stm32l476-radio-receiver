@@ -49,12 +49,11 @@ static int TestRFDecUSB_RFSamplesReady(void *ptr)
 {
     /* cast event argument */
     rfin_evarg_t *ea = ptr;
+    /* conversion buffers to prepare the data for the usb */
+    int32_t i_dec_i32[elems(i_dec[0])], q_dec_i32[elems(q_dec[0])];
 
-    /* update the pingpong counter */
-    pp++;
-
-    /* pointers */
-    int pp_head = pp & 1, pp_tail = !(pp & 1);
+    /* update the ping-pong counter */
+    pp = !pp;
     /* number of decimated frames */
     int rf_num = elems(rf) / 2, dec_num = elems(i_dec[0]);
 
@@ -65,14 +64,12 @@ static int TestRFDecUSB_RFSamplesReady(void *ptr)
     assert(Sem_Lock(&dec_sem, CB_NONE) == EOK, 
         "unable to lock the decimator", 0);
     /* start decimating mixed data data */
-    Dec_Decimate(i_mix, q_mix, rf_num, i_dec[pp_head], q_dec[pp_head], 
+    Dec_Decimate(i_mix, q_mix, rf_num, i_dec[pp], q_dec[pp], 
         TestRFDecUSB_DecimationDoneCallback);
     
-    /* conversion buffers to prepare the data for the usb */
-    int32_t i_dec_i32[elems(i_dec[0])], q_dec_i32[elems(q_dec[0])];
     /* convert to the fixed point notation for the usb */
-    FloatFixp_FloatToFixp32(i_dec[pp_tail], dec_num, 31, i_dec_i32);
-    FloatFixp_FloatToFixp32(q_dec[pp_tail], dec_num, 31, q_dec_i32);
+    FloatFixp_FloatToFixp32(i_dec[!pp], dec_num, 31, i_dec_i32);
+    FloatFixp_FloatToFixp32(q_dec[!pp], dec_num, 31, q_dec_i32);
 
     /* store within the usb buffer */
     USBAudioSrc_PutSamples(i_dec_i32, q_dec_i32, elems(i_dec_i32));
@@ -87,7 +84,7 @@ int TestRFDecUSB_Init(void)
     /* setup frequency */
     Mix1_SetLOFrequency(139000);
 
-    // /* register for 'samples' ready call */
+    /* register for 'samples' ready call */
     Ev_RegisterCallback(&rfin_ev, TestRFDecUSB_RFSamplesReady);
 
     /* start usb action */

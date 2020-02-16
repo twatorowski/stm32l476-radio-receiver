@@ -84,7 +84,8 @@ static int USBAudioSrc_DataCallback(void *arg)
     int frames_fetched = USBAudioSrc_GetSamples(buf_lin, frames_to_get);
     /* send buffer contents */
     USB_StartINTransfer(USB_EP1, buf_lin, 
-        frames_fetched * sizeof(usb_buf_elem_t), USBAudioSrc_DataCallback);
+        frames_fetched * sizeof(usb_buf_elem_t), 
+        USBAudioSrc_DataCallback);
     /* report status */
     return EOK;
 }

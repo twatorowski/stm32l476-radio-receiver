@@ -40,7 +40,6 @@ extern ev_t usb_audio_ev;
  */
 int USBAudioSrc_Init(void);
 
-
 /**
  * @brief Store audio samples within the usb buffer
  * 

@@ -61,7 +61,7 @@ void Init(void)
 void Main(void)
 {
     /* initialize the watchdog */
-    // Watchdog_Init();
+    Watchdog_Init();
     /* enable the fpu */
     FPU_Init();
 
@@ -134,12 +134,13 @@ void Main(void)
     /* initialize rf+decimators test */
     // TestRFDec_Init();
     /* initialize rf+decimators+usb test */
-    TestRFDecUSB_Init();
+    // TestRFDecUSB_Init();
+    /* test radio signal path */
+    TestRadio_Init();
 
     /* initialize dac test */
     // TestDACSine_Init();
-    /* test radio signal path */
-    // TestRadio_Init();
+
     /* test the float to fixp conversion */
     // TestFloatFixp_Init();
 
@@ -161,6 +162,6 @@ void Main(void)
         Idle_Poll();
 
         /* kick the dog counter */
-        // Watchdog_Kick();
+        Watchdog_Kick();
 	}
 }

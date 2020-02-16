@@ -52,7 +52,7 @@ static int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
 static float i_dec[2][elems(rf) / DEC_DECIMATION_RATE], 
     q_dec[2][elems(rf) / DEC_DECIMATION_RATE];
 /* ping pong indicator */
-static int dec_pp;
+static int pp;
 
 /* audio gain */
 static float dac_gain = 10.0f;
@@ -77,23 +77,23 @@ static int Radio_UpdateFrequencyCallback(void *ptr)
 
     /* calculate the actual frequency */
     actual_frequency = lo1_frequency + lo2_frequency;
-    // /* show the frequency */
-    // dprintf("set_frequency = %d, act_frequency = %d, lo1 = %.5e, lo2 = %.5e\n", 
-    //     set_frequency, actual_frequency, lo1_frequency, lo2_frequency);
-    // /* show the gain */
-    // dprintf("gain = %e\n", dac_gain);
+    /* show the frequency */
+    dprintf("set_frequency = %d, act_frequency = %d, lo1 = %.5e, lo2 = %.5e\n", 
+        set_frequency, actual_frequency, lo1_frequency, lo2_frequency);
+    /* show the gain */
+    dprintf("gain = %e\n", dac_gain);
     
-    // /* prepare the display content */
-    // int i, len = snprintf(display_buf, sizeof(display_buf), "%d", 
-    //     actual_frequency);
-    // /* store the data in the display memory */
-    // for (i = 0 ; i < len; i++)
-    //     Display_SetCharacter(i, display_buf[i]);
-    // /* fill the rest with spaces */
-    // for (; i < 6; i++)
-    //     Display_SetCharacter(i, ' ');
-    // /* update the display */
-    // Display_Update();
+    /* prepare the display content */
+    int i, len = snprintf(display_buf, sizeof(display_buf), "%d", 
+        actual_frequency);
+    /* store the data in the display memory */
+    for (i = 0 ; i < len; i++)
+        Display_SetCharacter(i, display_buf[i]);
+    /* fill the rest with spaces */
+    for (; i < 6; i++)
+        Display_SetCharacter(i, ' ');
+    /* update the display */
+    Display_Update();
 
     /* report status */
     return EOK;
@@ -166,75 +166,9 @@ static int Radio_DACEnableCallback(void *ptr)
     return EOK;
 }
 
-/* usb data buffer: 4 stereo frames long */
-static int32_t usb_buf[8 * 2 * USB_AUDIO_SRC_SAMPLES_PER_FRAME];
-/* usb ping pong buffer indicator: indicates where to put the data */
-static uint32_t usb_head, usb_tail;
-
-/* usb audio callback */
-static int Radio_USBAudioCallback(void *ptr)
-{
-    /* get the event argument */
-    usb_audio_evarg_t *ea = ptr;
-
-    /* got enough samples? advance the tail pointer */
-    if (usb_head - usb_tail >= USB_AUDIO_SRC_SAMPLES_PER_FRAME * 2)
-        usb_tail += USB_AUDIO_SRC_SAMPLES_PER_FRAME * 2;
-
-    /* convert tail pointer to tail index */
-    int tail = usb_tail % elems(usb_buf);
-    /* store data pointer/size, usb will do the rest */
-    ea->ptr = &usb_buf[0];
-    ea->size = USB_AUDIO_SRC_STEREO_SIZE;
-
-    //TODO:
-    // Led_SetState(1, LED_RED);
-    // Led_SetState(0, LED_RED);
-
-    /* report callback processing status */
-    return EOK;
-}
-
-/* store the samples within the usb audio buffer */
-static int Radio_USBAudioPutSamples(const int32_t *left, const int32_t *right, 
-    int num)
-{
-    /* convert head pointer to head index */
-    int head = usb_head % elems(usb_buf);
-    /* stereo mode */
-    int samples_num = num * 2;
-    /* number of samples that we still have space for */
-    int space_left = elems(usb_buf) - (usb_head - usb_tail);
-    if (space_left < samples_num)
-        space_left = 0;
-    /* limit the number of samples to be stored */
-    int samples_store = min(samples_num, space_left);
-    /* number of samples before wrapping occurs, limited to overall number of 
-     * samples */
-    int bwrap = min(elems(usb_buf) - head, samples_store);
-
-    /* copy 1st part */
-    for (int i = 0; i < bwrap; i += 2) {
-        usb_buf[head + i + 0] = *left++; usb_buf[head + i + 1] = *right++;
-    }
-    /* copy second part */
-    for (int i = 0; i < samples_store - bwrap; i += 2) {
-        usb_buf[i + 0] = *left++; usb_buf[i + 1] = *right++;
-    }
-
-    // Led_SetState(space_left == 0, LED_RED);
-    /* update head */
-    usb_head += samples_store;
-    /* report status */
-    return EOK;
-}
-
 /* this is called after the samples get decimated */
 static int Radio_DecimationCallback(void *ptr)
 {
-    /* make pings into pongs TODO: */
-    dec_pp = !dec_pp;
-    Sem_Release(&dec_sem);
     /* report callback processing status */
     return EOK;
 }
@@ -245,11 +179,14 @@ static int Radio_RFInCallback(void *ptr)
     /* cast event argument */
     rfin_evarg_t *ea = ptr;
 
+    /* update the ping-pong counter */
+    pp = !pp;
     /* head/tail adjusted pointers to the ping-pong buffer phase indicator */
-    float *i_dec_head = i_dec[ dec_pp], *q_dec_head = q_dec[ dec_pp];
-    float *i_dec_tail = i_dec[!dec_pp], *q_dec_tail = q_dec[!dec_pp];
-    /* make pings into pongs TODO: */
-    // dec_pp = !dec_pp;
+    float *i_dec_head = i_dec[ pp], *q_dec_head = q_dec[ pp];
+    float *i_dec_tail = i_dec[!pp], *q_dec_tail = q_dec[!pp];
+    /* number of decimated frames */
+    int rf_num = elems(rf) / 2, dec_num = elems(i_dec[0]);
+
 
     /* filtered data for the audio path */
     float i_dec_flt[elems(i_dec[0])], q_dec_flt[elems(q_dec[0])];
@@ -258,82 +195,51 @@ static int Radio_RFInCallback(void *ptr)
     /* conversion buffers to prepare the data for the usb */
     int32_t i_dec_tail_i32[elems(i_dec[0])], q_dec_tail_i32[elems(q_dec[0])];
 
-    /* number of samples after the hardware decimator */
-    const int dec_num = elems(i_dec[0]);
-    
-    /* set the led on to indicate the start of the processing */
-    // Led_SetState(1, LED_RED);
-
-    /* do the mixing */
-    //Mix1_Mix(ea->samples, ea->num, i_mix1, q_mix1);
-    for (int i = 0; i < ea->num; i += 4) {
-        i_mix1[i + 0] = +1 * ea->samples[i + 0];
-        q_mix1[i + 0] =  0 * ea->samples[i + 0];
-
-        i_mix1[i + 1] =  0 * ea->samples[i + 1];
-        q_mix1[i + 1] = -1 * ea->samples[i + 1];
-
-        i_mix1[i + 2] = -1 * ea->samples[i + 2];
-        q_mix1[i + 2] =  0 * ea->samples[i + 2];
-
-        i_mix1[i + 3] = +0 * ea->samples[i + 3];
-        q_mix1[i + 3] = +1 * ea->samples[i + 3];
-    }
-
-    /* start the parallel process of rf samples decimation */
-    if (Sem_Lock(&dec_sem, CB_NONE) == EOK) {
-        Dec_Decimate(i_mix1, q_mix1, ea->num, i_dec_head, q_dec_head, 
-            Radio_DecimationCallback);
-    } else {
-        while (1);
-    }
+    /* mix samples */
+    Mix1_Mix(ea->samples, ea->num, i_mix1, q_mix1);
+    /* prepare the decimator */
+    assert(Sem_Lock(&dec_sem, CB_NONE) == EOK, 
+        "unable to lock the decimator", 0);
+    /* start decimating mixed data data */
+    Dec_Decimate(i_mix1, q_mix1, rf_num, i_dec_head, q_dec_head, 
+        Radio_DecimationCallback);
 
     /* 2nd stage mixing, done in-situ */
-    // Mix2_Mix(i_dec_tail, q_dec_tail, dec_num, i_dec_tail, q_dec_tail);
+    Mix2_Mix(i_dec_tail, q_dec_tail, dec_num, i_dec_tail, q_dec_tail);
 
     /* convert to the fixed point notation for the usb */
     FloatFixp_FloatToFixp32(i_dec_tail, dec_num, 30, i_dec_tail_i32);
     FloatFixp_FloatToFixp32(q_dec_tail, dec_num, 30, q_dec_tail_i32);
-
-    //Led_SetState(0, LED_RED);
-    for (int i = 0; i < dec_num; i++)
-        if (fp_fabs(q_dec_tail[i]) > 0.5) 
-            Led_SetState(1, LED_RED);
-    Led_SetState(0, LED_RED);
-
     /* put into usb buffers */
-    Radio_USBAudioPutSamples(i_dec_tail_i32, q_dec_tail_i32, dec_num);
+    USBAudioSrc_PutSamples(i_dec_tail_i32, q_dec_tail_i32, dec_num);
 
-    // /* filter before demodulation */
-    // DemodAM_Filter(i_dec_tail, q_dec_tail, dec_num, i_dec_flt, 
-    //     q_dec_flt);
-    // /* demodulate the output data */
-    // DemodAM_Demodulate(i_dec_flt, q_dec_flt, dec_num, dem);
+    /* filter before demodulation */
+    DemodAM_Filter(i_dec_tail, q_dec_tail, dec_num, i_dec_flt, 
+        q_dec_flt);
+    /* demodulate the output data */
+    DemodAM_Demodulate(i_dec_flt, q_dec_flt, dec_num, dem);
 
-    // /* apply gain */
-    // FloatScale_Scale(dem, dec_num, dac_gain, dem);
-    // /* convert to the fixed point notation for the dac */
-    // FloatFixp_FloatToFixp32(dem, dec_num, 23, dac + dac_head);
-    // /* do the saturation to avoid overflows when the audio is getting loud */
-    // FixpSat_Saturate(dac + dac_head, dec_num, 23, dac + dac_head);
+    /* apply gain */
+    FloatScale_Scale(dem, dec_num, dac_gain, dem);
+    /* convert to the fixed point notation for the dac */
+    FloatFixp_FloatToFixp32(dem, dec_num, 23, dac + dac_head);
+    /* do the saturation to avoid overflows when the audio is getting loud */
+    FixpSat_Saturate(dac + dac_head, dec_num, 23, dac + dac_head);
 
-    // /* update dac head index */
-    // dac_head = (dac_head + dec_num) % elems(dac);
+    /* update dac head index */
+    dac_head = (dac_head + dec_num) % elems(dac);
 
-    // /* start streaming audio to the dac if not already started, but only if we 
-    //  * have at least half of the dac buffer filled with data. this prevents the 
-    //  * artifacts by ensuring that we are not writing data that is currenlty 
-    //  * being sent to dac */
-    // if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
-    //     /* start streaming data */
-    //     SAI1A_StartStreaming(dac, elems(dac));
-    //     /* start the dac enable procedure 100 ms after the stream was started 
-    //      * to avoid audio glitches */
-    //     Await_CallMeLater(100, Radio_DACEnableCallback, 0);
-    // }
-
-    /* set the led off to indicate the end of the processing */
-    // Led_SetState(0, LED_RED);
+    /* start streaming audio to the dac if not already started, but only if we 
+     * have at least half of the dac buffer filled with data. this prevents the 
+     * artifacts by ensuring that we are not writing data that is currenlty 
+     * being sent to dac */
+    if (dac_head >= elems(dac) / 2 && Sem_Lock(&sai1a_sem, CB_NONE) == EOK) {
+        /* start streaming data */
+        SAI1A_StartStreaming(dac, elems(dac));
+        /* start the dac enable procedure 100 ms after the stream was started 
+         * to avoid audio glitches */
+        Await_CallMeLater(100, Radio_DACEnableCallback, 0);
+    }
     
     /* report status */
     return EOK;
@@ -352,8 +258,6 @@ int Radio_Init(void)
     Ev_RegisterCallback(&rfin_ev, Radio_RFInCallback);
     /* register callback for the joystick events */
     Ev_RegisterCallback(&joystick_ev, Radio_JoystickCallback);
-    /* register callback for usb audio events */
-    Ev_RegisterCallback(&usb_audio_ev, Radio_USBAudioCallback);
 
     /* start usb action */
     USB_Connect(1);

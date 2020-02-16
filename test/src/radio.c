@@ -34,15 +34,14 @@
 #include "debug.h"
 
 /* rf signal buffer, current data pointer */
-static int16_t rf[DEC_DECIMATION_RATE * 32];
+static int16_t rf[RF_SAMPLING_FREQ * 2 / 1000];
 /* complex data after 1st stage mixing */
 static int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
-/* complex data after downsampling: in-phase channel, and quadrature channel. 
- * we use twice as much space needed to operate in ping-pong mode */
-static float i_dec[2][elems(rf) / 2 / DEC_DECIMATION_RATE], 
-    q_dec[2][elems(rf) / 2 / DEC_DECIMATION_RATE];
+/* decimation result holding array, set up as ping-pong buffer */
+static float i_dec[2][elems(i_mix1) / DEC_DECIMATION_RATE],
+             q_dec[2][elems(q_mix1) / DEC_DECIMATION_RATE];
 /* ping pong indicator */
-static int dec_pp;
+static volatile int pp;
 
 /* AM-demodulated audio samples */
 static float dem[elems(rf) / 2 / DEC_DECIMATION_RATE];
@@ -228,8 +227,8 @@ static int TestRadio_DACEnableCallback(void *ptr)
 /* this is called after the samples get decimated */
 static int TestRadio_DecimationCallback(void *ptr)
 {
-    /* make pings into pongs */
-    dec_pp = !dec_pp;
+    /* release the decimator */
+    Sem_Release(&dec_sem);
     /* report callback processing status */
     return EOK;
 }
@@ -239,17 +238,23 @@ static int TestRadio_AnalogCallback(void *ptr)
 {
     /* map event argument */
     rfin_evarg_t *ea = ptr;
-    /* head/tail adjusted pointers to the ping-pong buffer phase indicator */
-    float *i_dec_head = i_dec[ dec_pp], *q_dec_head = q_dec[ dec_pp];
-    float *i_dec_tail = i_dec[!dec_pp], *q_dec_tail = q_dec[!dec_pp];
+    /* number of rf samples */
+    const int rf_num = elems(rf) / 2;
     /* number of samples after the hardware decimator */
-    const int dec_num = ea->num / DEC_DECIMATION_RATE;
+    const int dec_num = rf_num/ DEC_DECIMATION_RATE;
 
-    /* set the led on to indicate the start of the processing */
-    Led_SetState(1, LED_RED);
+    /* update the ping-pong counter */
+    pp = !pp;
+    /* head/tail adjusted pointers to the ping-pong buffer phase indicator */
+    float *i_dec_head = i_dec[ pp], *q_dec_head = q_dec[ pp];
+    float *i_dec_tail = i_dec[!pp], *q_dec_tail = q_dec[!pp];
 
     /* do the mixing */
     Mix1_Mix(ea->samples, ea->num, i_mix1, q_mix1);
+
+    /* prepare the decimator */
+    assert(Sem_Lock(&dec_sem, CB_NONE) == EOK, 
+        "unable to lock the decimator", 0);
     /* start the parallel process of rf samples decimation */
     Dec_Decimate(i_mix1, q_mix1, ea->num, i_dec_head, q_dec_head, 
         TestRadio_DecimationCallback);
@@ -283,9 +288,6 @@ static int TestRadio_AnalogCallback(void *ptr)
          * to avoid audio glitches */
         Await_CallMeLater(100, TestRadio_DACEnableCallback, 0);
     }
-
-    /* set the led off to indicate the end of the processing */
-    Led_SetState(0, LED_RED);
 
     /* report status */
     return EOK;
