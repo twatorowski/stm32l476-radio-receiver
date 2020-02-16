@@ -28,7 +28,7 @@ int CpuClock_Init(void)
 	/* select msi range configuration */
 	RCC->CR |= RCC_CR_MSIRGSEL;
 
-    /* select the msi as the 48MHz source TODO: */
+    /* select the msi as the 48MHz source */
     RCC->CCIPR |= RCC_CCIPR_CLK48SEL;
 
 	/* enable crystal oscillator */

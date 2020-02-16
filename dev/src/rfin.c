@@ -20,6 +20,7 @@
 #include "sys/critical.h"
 #include "sys/ev.h"
 #include "util/elems.h"
+#include "util/msblsb.h"
 
 #define DEBUG
 #include "debug.h"
@@ -135,6 +136,10 @@ int RFIn_Init(void)
 	 * mode */
 	ADC1->CFGR = ADC_CFGR_OVRMOD | ADC_CFGR_EXTSEL_TIM2_TRGO | ADC_CFGR_DMAEN |
 			ADC_CFGR_EXTEN_RE | ADC_CFGR_DMACFG;
+
+    /* apply offset */
+    ADC1->OFR1 = ADC_OFR1_OFFSET1_EN | 5 << LSB(ADC_OFR1_OFFSET1_CH) |
+        3070 << LSB(ADC_OFR1_OFFSET1);
 
 	/* clear ready flag */
 	ADC1->ISR = ADC_ISR_ADRDY;

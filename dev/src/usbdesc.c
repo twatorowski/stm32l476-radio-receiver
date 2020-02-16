@@ -196,7 +196,7 @@ static const uint8_t usb_config0_descriptor[217] = {
     0x05,                   /* bDescriptorType: endpoint desc. */
     0x81,                   /* bEndpointAddress: IN1 */
     0x01,                   /* bmAttributes: Isochronous-synchronous */
-    /* wMaxPacketSize: channels * sps * bytes_per_subframe / 1000 TODO: */
+    /* wMaxPacketSize: channels * sps * bytes_per_subframe / 1000 */
     (((USB_AUDIO_SRC_MAX_TFER_SIZE) >> 0) & 0xFF), 
     (((USB_AUDIO_SRC_MAX_TFER_SIZE) >> 8) & 0xFF),
     0x01,                   /* bInterval: One packet per frame. */

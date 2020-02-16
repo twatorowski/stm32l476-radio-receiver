@@ -11,6 +11,15 @@
 #ifndef DEV_DISPLAY_H_
 #define DEV_DISPLAY_H_
 
+#include "sys/cb.h"
+#include "sys/sem.h"
+
+/* semaphore */
+extern sem_t display_sem;
+
+/** @brief lcd interrupt */
+void Display_LCDIsr(void);
+
 /**
  * @brief Initialize the display module
  * 
@@ -28,8 +37,12 @@ int Display_Init(void);
 void Display_SetCharacter(int pos, char c);
 
 /**
- * @brief Transfers the LCD RAM contents to the Display itself
+ * @brief  Transfers the LCD RAM contents to the Display itself.
+ * 
+ * @param cb callback to be called when the transfer is complete
+ * 
+ * @return void * null 
  */
-void Display_Update(void);
+void * Display_Update(cb_t cb);
 
 #endif /* DEV_DISPLAY_H_ */

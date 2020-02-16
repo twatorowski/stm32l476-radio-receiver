@@ -77,8 +77,10 @@ static void LOOP_UNROLL OPTIMIZE("O3") Mix1_UpdateArrays(int band)
 {
     /* index counters */
     int i_cnt = 0, q_cnt = elems(cos_lut) / 4;
+    /* number of bits to be shifted */
+    const int bits = RF_SAMPLING_BITS;
     /* rounding factor to be added before truncation */
-    const int32_t rounding_f = 1 << (RF_SAMPLING_BITS - 1);
+    const int32_t rounding_f = 1 << (bits - 1);
 
     /* setup luts for in-phase and quadrature components. in-phase = 
      * cos(band * t), quadrature = -sin(band * t) this results in the 
@@ -87,8 +89,8 @@ static void LOOP_UNROLL OPTIMIZE("O3") Mix1_UpdateArrays(int band)
      * the positive frequencies down to near DC. */
     for (int i = 0; i < elems(cos_lut); i++) {
         /* write another entry */
-        i_lut[i] = (cos_lut[i_cnt] + rounding_f) >> RF_SAMPLING_BITS;  
-        q_lut[i] = (cos_lut[q_cnt] + rounding_f) >> RF_SAMPLING_BITS;
+        i_lut[i] = (cos_lut[i_cnt] + rounding_f) >> bits;  
+        q_lut[i] = (cos_lut[q_cnt] + rounding_f) >> bits;
         /* increment the coutners and wrap around if needed */
         if ((i_cnt += band) >= elems(cos_lut)) i_cnt -= elems(cos_lut);
         if ((q_cnt += band) >= elems(cos_lut)) q_cnt -= elems(cos_lut);
@@ -121,16 +123,12 @@ static void LOOP_UNROLL OPTIMIZE("O3") Mix1_Iter(const int16_t * restrict rf,
 /* mix the incoming rf signal by mixing it with lo */
 void OPTIMIZE("O3") Mix1_Mix(const int16_t *rf, int num, int16_t *i, int16_t *q)
 {
-    /* local copy to avoid tearing effects */
-    int _set_band = set_band;
     /* assert on the number of elements */
     assert(num % elems(cos_lut) == 0, 
         "number of samples not divisible by lut length", num);
     
-    /* band was changed, need to update TODO: */
-    //if (curr_band != _set_band) {
-        Mix1_UpdateArrays(_set_band); curr_band = _set_band;
-    //}
+    /* update the arrays if the frequency setting has changed */
+    Mix1_UpdateArrays(set_band);
 
     /* mix with local oscillator */
     for (int cnt = 0; cnt < num; cnt += elems(cos_lut))

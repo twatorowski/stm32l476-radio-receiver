@@ -10,8 +10,6 @@
 #include "assert.h"
 #include "err.h"
 #include "dev/dec.h"
-/*TODO:*/
-#include "dev/watchdog.h"
 #include "dsp/float_fixp.h"
 #include "stm32l476/rcc.h"
 #include "stm32l476/dfsdm.h"
@@ -172,14 +170,9 @@ int Dec_Init(void)
 	/* start filter operation */
 	DFSDMF0->CR1 |= DFSDM_CR1_RSWSTART;
     DFSDMF1->CR1 |= DFSDM_CR1_RSWSTART;
-    ASM volatile("nop\n");
-    ASM volatile("nop\n");
-    ASM volatile("nop\n");
-    ASM volatile("nop\n");
 	/* initialize filter, this needs to be done because filter is not willing to
 	 * output any data before it's integrators and combs are filled (decimation
 	 * factor * filter order samples are needed) */
-    /* TODO: */
 	for (int i = 0; i < DEC_DECIMATION_RATE *50; i++) {
 		DFSDMC1->CHDATINR = 0; DFSDMC0->CHDATINR = 0; 
     }
@@ -212,9 +205,6 @@ dec_cbarg_t * Dec_Decimate(const int16_t *i, const int16_t *q, int num,
     /* store the output buffer pointers */
     samples_i.fl = i_out, samples_q.fl = q_out;
 
-    /* sanity check TODO: */
-    assert((uintptr_t)i % 4 == 0 && (uintptr_t)q % 4 == 0, 
-        "input data address is not aligned", 0);
     /* sanity check for the number of samples */
     assert(samples_num * DEC_DECIMATION_RATE == num, 
         "number of samples is not divisible by the decimation factor", 

@@ -49,7 +49,6 @@
 #define DEBUG
 #include "debug.h"
 
-#include "compiler.h"
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -122,7 +121,7 @@ void Main(void)
     CS43L22_Init();
 
     /* initialize the radio receiver logic */
-    // Radio_Init();
+    Radio_Init();
 
     /* tests */
     /* test usart2 communication */
@@ -136,32 +135,15 @@ void Main(void)
     /* initialize rf+decimators+usb test */
     // TestRFDecUSB_Init();
     /* test radio signal path */
-    TestRadio_Init();
-
+    // TestRadio_Init();
     /* initialize dac test */
     // TestDACSine_Init();
-
     /* test the float to fixp conversion */
     // TestFloatFixp_Init();
 
-    
-    /* test the virtual com port */
-    // TestVCP_Init();
-    // TestVCP2_Init();
-
-    // USBVCP2_Recv(test, 10, te);
-    // TestVCPRate_Init();
-
 	/* execution loop */
     while (1) {
-        /* poll at protocol routines */
-		// AT_Poll();
-
-        // TestVCP_Poll();
         /* poll idle modes */
         Idle_Poll();
-
-        /* kick the dog counter */
-        Watchdog_Kick();
 	}
 }

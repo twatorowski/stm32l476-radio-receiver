@@ -36,21 +36,21 @@
 #define DEBUG
 #include "debug.h"
 
-#include "util/string.h"
-
 /* frequencies */
-static int set_frequency = 600000, actual_frequency;
+static int set_frequency = 225000, actual_frequency;
+/* currently displayed frequency */
+static int displayed_frequency;
+
 /* frequencies of the local oscillator */
 static float lo1_frequency, lo2_frequency;
 
-/* rf signal buffer, current data pointer */
-static int16_t rf[DEC_DECIMATION_RATE * 2 * 4];
+/* rf signal buffer, 2ms long */
+static int16_t rf[RF_SAMPLING_FREQ * 2 * 2 / 1000];
 /* complex data after 1st stage mixing */
 static int16_t i_mix1[elems(rf) / 2], q_mix1[elems(rf) / 2];
-/* complex data after downsampling: in-phase channel, and quadrature channel. 
- * we use twice as much space needed to operate in ping-pong mode */
-static float i_dec[2][elems(rf) / DEC_DECIMATION_RATE], 
-    q_dec[2][elems(rf) / DEC_DECIMATION_RATE];
+/* decimation result holding array, set up as ping-pong buffer */
+static float i_dec[2][elems(i_mix1) / DEC_DECIMATION_RATE],
+             q_dec[2][elems(q_mix1) / DEC_DECIMATION_RATE];
 /* ping pong indicator */
 static int pp;
 
@@ -64,36 +64,55 @@ static uint32_t dac_head;
 static enum dac_states { LOCK, INIT, PLAY, VOLUME, ON, ERR } dac_state;
 
 
-/* callback called to update the frequencies of both local oscillators and to 
- * update the LCD display */
-static int Radio_UpdateFrequencyCallback(void *ptr)
+/* update the display */
+static int OPTIMIZE("O0") Radio_UpdateDisplay(void *ptr)
 {
     /* display character buffer */
-    char display_buf[7];
-
-    /* set the frequencies for the local oscillators */
-    lo1_frequency = Mix1_SetLOFrequency(set_frequency);
-    lo2_frequency = Mix2_SetLOFrequency(set_frequency - lo1_frequency);
-
-    /* calculate the actual frequency */
-    actual_frequency = lo1_frequency + lo2_frequency;
-    /* show the frequency */
-    dprintf("set_frequency = %d, act_frequency = %d, lo1 = %.5e, lo2 = %.5e\n", 
-        set_frequency, actual_frequency, lo1_frequency, lo2_frequency);
-    /* show the gain */
-    dprintf("gain = %e\n", dac_gain);
+    static char display_buf[7];
     
+    /* all set! */
+    if (displayed_frequency == actual_frequency) {
+        Sem_Release(&display_sem); 
+        return EOK;
+    }
+
     /* prepare the display content */
-    int i, len = snprintf(display_buf, sizeof(display_buf), "%d", 
-        actual_frequency);
+    int i, len = snprintf(display_buf, sizeof(display_buf), "%04dk", 
+        (actual_frequency + 500) / 1000);
     /* store the data in the display memory */
     for (i = 0 ; i < len; i++)
         Display_SetCharacter(i, display_buf[i]);
     /* fill the rest with spaces */
     for (; i < 6; i++)
         Display_SetCharacter(i, ' ');
+    /* update the displayed frequency variable */
+    displayed_frequency = actual_frequency;
     /* update the display */
-    Display_Update();
+    Display_Update(Radio_UpdateDisplay);
+
+    /* report status */
+    return EOK;
+}
+
+/* callback called to update the frequencies of both local oscillators and to 
+ * update the LCD display */
+static int Radio_UpdateFrequencyCallback(void *ptr)
+{
+    /* set the frequencies for the local oscillators */
+    lo1_frequency = Mix1_SetLOFrequency(set_frequency);
+    lo2_frequency = Mix2_SetLOFrequency(set_frequency - lo1_frequency);
+
+    /* calculate the actual frequency */
+    actual_frequency = lo1_frequency + lo2_frequency;
+    // /* show the frequency */
+    // dprintf("set_frequency = %d, act_frequency = %d, lo1 = %.5e, lo2 = %.5e\n", 
+    //     set_frequency, actual_frequency, lo1_frequency, lo2_frequency);
+    // /* show the gain */
+    // dprintf("gain = %e\n", dac_gain);
+    
+    /* update the display */
+    if (Sem_Lock(&display_sem, CB_NONE) == EOK)
+        Radio_UpdateDisplay(0);
 
     /* report status */
     return EOK;
@@ -169,6 +188,8 @@ static int Radio_DACEnableCallback(void *ptr)
 /* this is called after the samples get decimated */
 static int Radio_DecimationCallback(void *ptr)
 {
+    /* release the decimator */
+    Sem_Release(&dec_sem);
     /* report callback processing status */
     return EOK;
 }
@@ -185,8 +206,7 @@ static int Radio_RFInCallback(void *ptr)
     float *i_dec_head = i_dec[ pp], *q_dec_head = q_dec[ pp];
     float *i_dec_tail = i_dec[!pp], *q_dec_tail = q_dec[!pp];
     /* number of decimated frames */
-    int rf_num = elems(rf) / 2, dec_num = elems(i_dec[0]);
-
+    const int rf_num = elems(rf) / 2, dec_num = elems(i_dec[0]);
 
     /* filtered data for the audio path */
     float i_dec_flt[elems(i_dec[0])], q_dec_flt[elems(q_dec[0])];
@@ -208,8 +228,8 @@ static int Radio_RFInCallback(void *ptr)
     Mix2_Mix(i_dec_tail, q_dec_tail, dec_num, i_dec_tail, q_dec_tail);
 
     /* convert to the fixed point notation for the usb */
-    FloatFixp_FloatToFixp32(i_dec_tail, dec_num, 30, i_dec_tail_i32);
-    FloatFixp_FloatToFixp32(q_dec_tail, dec_num, 30, q_dec_tail_i32);
+    FloatFixp_FloatToFixp32(i_dec_tail, dec_num, 31, i_dec_tail_i32);
+    FloatFixp_FloatToFixp32(q_dec_tail, dec_num, 31, q_dec_tail_i32);
     /* put into usb buffers */
     USBAudioSrc_PutSamples(i_dec_tail_i32, q_dec_tail_i32, dec_num);
 

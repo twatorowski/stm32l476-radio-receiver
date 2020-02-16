@@ -122,7 +122,6 @@ static void USBCore_StartDataINStage(void *ptr, size_t size)
 	/* this shall result in transfer start */
 	USB_StartINTransfer(USB_EP0, ctl_ptr, min(max_size, ctl_size),
 			USBCore_DataINCallback);
-    // TODO:
 	/* we shall enable reception to listen to status out frames that end 
      * transfer */
 	USB_StartOUTTransfer(USB_EP0, 0, 0, USBCore_StatusOUTCallback);

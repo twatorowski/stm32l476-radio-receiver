@@ -78,9 +78,9 @@
 /** @name Interrupt Priorities */
 /** @{ */
 /** @brief data received callback priority (0x00 - highest, 0xf0 lowest) */
-#define INT_PRI_USART2_RX						    0x50
+#define INT_PRI_USART2_RX						    0xf0
 /** @brief data sent callback priority (0x00 - highest, 0xf0 lowest) */
-#define INT_PRI_USART2_TX						    0x50
+#define INT_PRI_USART2_TX						    0xf0
 /** @brief rf sampling priority */
 #define INT_PRI_RFIN                                0x30
 /** @brief decimator interrupt priority */
@@ -92,9 +92,11 @@
 /** @brief invoke interrupt priority */
 #define INT_PRI_INVOKE                              0x50
 /** @brief async delay priority */
-#define INT_PRI_AWAIT                               0x50
+#define INT_PRI_AWAIT                               0x10
 /** @brief USB priority */
-#define INT_PRI_USB                                 0x10
+#define INT_PRI_USB                                 0x20
+/** @brief LCD priority */
+#define INT_PRI_LCD                                 0xf0
 /** @} */
 
 /** @name USART2 configuration */

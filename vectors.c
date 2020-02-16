@@ -19,6 +19,7 @@
 /* includes with interrupt/exceptions handlers */
 #include "dev/await.h"
 #include "dev/dec.h"
+#include "dev/display.h"
 #include "dev/extimux.h"
 #include "dev/i2c1.h"
 #include "dev/invoke.h"
@@ -80,4 +81,7 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
 
     /* usb module */
     SET_INT_VEC(STM32_INT_OTG_FS, USB_OTGFSIsr),
+
+    /* display module */
+    SET_INT_VEC(STM32_INT_LCD, Display_LCDIsr),
 };
