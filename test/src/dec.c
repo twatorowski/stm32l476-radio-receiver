@@ -70,20 +70,40 @@ static const uint16_t ALIGNED(4) sine_lut[] = {
     0xfbfe, 0xfc7e, 0xfcfe, 0xfd7e, 0xfdfe, 0xfe7f, 0xfeff, 0xff80,
 };
 
-/* test the decimators */
-int TestDec_Init(void)
-{   
-    /* output results holding array */
-    float i_out[elems(sine_lut) / DEC_DECIMATION_RATE];
-    float q_out[elems(sine_lut) / DEC_DECIMATION_RATE];
+/* output results holding array */
+static float i_out[elems(sine_lut) / DEC_DECIMATION_RATE];
+static float q_out[elems(sine_lut) / DEC_DECIMATION_RATE];
+/* decimation counter */
+static int cnt = 0;
+
+/* decimation callback */
+static int TestDec_DecimationDoneCallback(void *ptr)
+{
+    /* check only the first the thousand of decimations */
+    if (ptr && cnt < 10000) {
+        /* compare two outputs */
+        for (int i = 0; i < elems(i_out); i++) {
+            /* compare */
+            assert(i_out[i] == q_out[i], "decimated outputs differ", cnt);
+            /* clear arrays */
+            i_out[i] = q_out[i] = 0;
+        }
+        cnt++;
+    }
 
     /* do the decimation */
     Dec_Decimate((int16_t * )sine_lut, (int16_t * )sine_lut, elems(sine_lut), 
-        i_out, q_out, CB_SYNC);
-    /* compare two outputs */
-    for (int i = 0; i < elems(i_out); i++)
-        assert(i_out[i] == q_out[i], "decimated outputs differ", i);
+        i_out, q_out, TestDec_DecimationDoneCallback);
     
+    /* report status */
+    return EOK;
+}
+
+/* test the decimators */
+int TestDec_Init(void)
+{   
+    /* start process */
+    Sem_Lock(&dec_sem, TestDec_DecimationDoneCallback);
     /* report status */
     return EOK;
 }

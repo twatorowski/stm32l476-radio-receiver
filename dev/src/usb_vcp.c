@@ -217,11 +217,25 @@ static int USBVCP_ResetCallback(void *arg)
     return EOK;
 }
 
+/* usb callback */
+static int USBVCP_USBCallback(void *arg)
+{
+    /* cast event argument */
+    usb_evarg_t *ea = arg;
+    /* processing according to event type */
+    switch (ea->type) {
+    case USB_EVARG_TYPE_RESET : USBVCP_ResetCallback(arg); break;
+    }
+    
+    /* report status */
+	return EOK;
+}
+
 /* initialize virtual com port logic */
 int USBVCP_Init(void)
 {
 	/* listen to usb reset events */
-	Ev_RegisterCallback(&usb_rst_ev, USBVCP_ResetCallback);
+	Ev_RegisterCallback(&usb_ev, USBVCP_USBCallback);
 	Ev_RegisterCallback(&usbcore_req_ev, USBVCP_RequestCallback);
 
 	/* release semaphore */

@@ -33,12 +33,15 @@
 #include "dev/usb_vcp.h"
 #include "dev/watchdog.h"
 #include "radio/radio.h"
+#include "sys/idle.h"
 #include "test/am_radio.h"
 #include "test/dac_sine.h"
 #include "test/dec.h"
 #include "test/float_fixp.h"
 #include "test/radio.h"
 #include "test/rfin.h"
+#include "test/rf_dec.h"
+#include "test/rf_dec_usb.h"
 #include "test/usart2.h"
 #include "test/vcp.h"
 #include "test/vcp_rate.h"
@@ -46,6 +49,7 @@
 #define DEBUG
 #include "debug.h"
 
+#include "compiler.h"
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -57,7 +61,7 @@ void Init(void)
 void Main(void)
 {
     /* initialize the watchdog */
-    Watchdog_Init();
+    // Watchdog_Init();
     /* enable the fpu */
     FPU_Init();
 
@@ -67,6 +71,9 @@ void Main(void)
     LSI_Init();
     /* start systime */
 	SysTime_Init();
+
+    /* mcu idle mode support */
+    Idle_Init();
 
     /* internals needed for the debug */
     /* initialize usart2 */
@@ -115,7 +122,7 @@ void Main(void)
     CS43L22_Init();
 
     /* initialize the radio receiver logic */
-    Radio_Init();
+    // Radio_Init();
 
     /* tests */
     /* test usart2 communication */
@@ -124,6 +131,11 @@ void Main(void)
     // TestRFIn_Init();
     /* initialize decimators test */
     // TestDec_Init();
+    /* initialize rf+decimators test */
+    // TestRFDec_Init();
+    /* initialize rf+decimators+usb test */
+    TestRFDecUSB_Init();
+
     /* initialize dac test */
     // TestDACSine_Init();
     /* test radio signal path */
@@ -142,15 +154,13 @@ void Main(void)
 	/* execution loop */
     while (1) {
         /* poll at protocol routines */
-		AT_Poll();
+		// AT_Poll();
 
         // TestVCP_Poll();
-
-
-        /* poll tests */
-
+        /* poll idle modes */
+        Idle_Poll();
 
         /* kick the dog counter */
-        Watchdog_Kick();
+        // Watchdog_Kick();
 	}
 }

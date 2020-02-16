@@ -66,14 +66,15 @@ SRC += ./radio/src/radio.c ./radio/src/dec4.c
 
 # system files
 SRC += ./sys/src/critical.c ./sys/src/ev.c
-SRC += ./sys/src/sem.c
+SRC += ./sys/src/sem.c ./sys/src/idle.c
 
 # tests
 SRC += ./test/src/usart2.c ./test/src/dac_sine.c
 SRC += ./test/src/dec.c ./test/src/radio.c
 SRC += ./test/src/am_radio.c ./test/src/float_fixp.c
 SRC += ./test/src/vcp.c ./test/src/vcp_rate.c
-SRC += ./test/src/rfin.c
+SRC += ./test/src/rfin.c ./test/src/rf_dec.c
+SRC += ./test/src/rf_dec_usb.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

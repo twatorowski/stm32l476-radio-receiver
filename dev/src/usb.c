@@ -27,11 +27,11 @@
 #include "util/minmax.h"
 #include "util/string.h"
 
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
-/* system events: reset event */
-ev_t usb_rst_ev;
+/* system events */
+ev_t usb_ev;
 
 /* in/out endpoint related stuff */
 typedef struct {
@@ -156,8 +156,11 @@ static void USB_OTGFSResetIsr(void)
 
 	/* reset the endpoint situation */
 	memset(in, 0, sizeof(in)); memset(out, 0, sizeof(out));
+
+    /* prepare event argument */
+    usb_evarg_t ea = { .type = USB_EVARG_TYPE_RESET };
 	/* start usb operation */
-	Ev_Notify(&usb_rst_ev, 0);
+	Ev_Notify(&usb_ev, &ea);
 
 	/* clear flag */
 	USBFS->GINTSTS = USB_GINTSTS_USBRST;
@@ -284,10 +287,6 @@ static void USB_OTGFSInEpIsr(void)
 		/* endpoint did not raise the interrupt? */
 		if (!(irq & 1))
 			continue;
-        if (ep_num == 1) {
-            ASM volatile ("nop\n");
-            dprintf("ep1\n", 0);
-        }
 		/* read endpoint specific interrupt */
 		ep_irq = USBFS_IE(ep_num)->DIEPINT & 
             (USBFS->DIEPMSK | USB_DIEPINT_TXFE);
@@ -320,54 +319,66 @@ static void USB_OTGFSInEpIsr(void)
 	}
 }
 
+/* incomplete isochronous transfer occured */
+static void USB_OTGFSIncIsoIsr(void)
+{
+    /* prepare event argument */
+    usb_evarg_t ea = { .type = USB_EVARG_TYPE_ISOINC };
+	/* start usb operation */
+	Ev_Notify(&usb_ev, &ea);
+
+    /* clear flag */
+    USBFS->GINTSTS = USB_GINTSTS_IISOIXFR;
+}
+
 /* my interrupt handler */
 void USB_OTGFSIsr(void)
 {
-	/* get interrupt flags */
-	uint32_t irq = USBFS->GINTSTS & USBFS->GINTMSK;
+    /* get interrupt flags */
+    uint32_t irq = USBFS->GINTSTS & USBFS->GINTMSK;
 
-	/* display interrupt information */
-	dprintf("irq = %08x\n", irq);
+    /* display interrupt information */
+    // dprintf("irq = %08x\n", irq);
 
-	/* invalid interrupt? */
-	if (!irq)
-		return;
+    /* invalid interrupt? */
+    if (!irq)
+        return;
 
-	/* OUT endpoint interrupt */
-	if (irq & USB_GINTSTS_OEPINT)
-		USB_OTGFSOutEpIsr();
+    /* OUT endpoint interrupt */
+    if (irq & USB_GINTSTS_OEPINT)
+        USB_OTGFSOutEpIsr();
 
-	/* IN endpoint interrupt */
-	if (irq & USB_GINTSTS_IEPINT)
-		USB_OTGFSInEpIsr();
+    /* IN endpoint interrupt */
+    if (irq & USB_GINTSTS_IEPINT)
+        USB_OTGFSInEpIsr();
 
-	/* wakeup interrupt */
-	if (irq & USB_GINTSTS_WKUINT)
-		USBFS->GINTSTS = USB_GINTSTS_WKUINT;
+    /* wakeup interrupt */
+    if (irq & USB_GINTSTS_WKUINT)
+        USBFS->GINTSTS = USB_GINTSTS_WKUINT;
 
-	/* usb suspend interrupt */
-	if (irq & USB_GINTSTS_USBSUSP)
-		USBFS->GINTSTS = USB_GINTSTS_USBSUSP;
+    /* usb suspend interrupt */
+    if (irq & USB_GINTSTS_USBSUSP)
+        USBFS->GINTSTS = USB_GINTSTS_USBSUSP;
 
     /* isochronous transfer incomplete */
     if (irq & USB_GINTSTS_IISOIXFR)
-        USBFS->GINTSTS = USB_GINTSTS_IISOIXFR;
+        USB_OTGFSIncIsoIsr();
 
-	/* invalid mode interrupt? */
-	if (irq & USB_GINTSTS_MMIS)
-		USBFS->GINTSTS = USB_GINTSTS_MMIS;
+    /* invalid mode interrupt? */
+    if (irq & USB_GINTSTS_MMIS)
+        USBFS->GINTSTS = USB_GINTSTS_MMIS;
 
-	/* usb reset */
-	if (irq & USB_GINTSTS_USBRST)
-		USB_OTGFSResetIsr();
+    /* usb reset */
+    if (irq & USB_GINTSTS_USBRST)
+        USB_OTGFSResetIsr();
 
-	/* usb enumeration done */
-	if (irq & USB_GINTSTS_ENUMDNE)
-		USB_OTGFSEnumIsr();
+    /* usb enumeration done */
+    if (irq & USB_GINTSTS_ENUMDNE)
+        USB_OTGFSEnumIsr();
 
-	/* got packet in rx fifo? */
-	if (irq & USB_GINTSTS_RXFLVL)
-		USB_OTGFSRxlvlIsr();
+    /* got packet in rx fifo? */
+    if (irq & USB_GINTSTS_RXFLVL)
+        USB_OTGFSRxlvlIsr();
 }
 
 /* initialize usb support */

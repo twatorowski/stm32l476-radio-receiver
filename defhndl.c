@@ -10,6 +10,7 @@
 #include "compiler.h"
 
 #include "err.h"
+#include "reset.h"
 #include "arch/arch.h"
 #include "stm32l476/scb.h"
 
@@ -17,7 +18,7 @@
 #include "debug_dump.h"
 
 /* dump information to storage */
-static void DefHndl_Dump(void *sp, uint32_t ipsr)
+static void OPTIMIZE ("O0") DefHndl_Dump(void *sp, uint32_t ipsr)
 {
     /* placeholders */
     volatile debug_exc_info_t *ei = &debug_exc_info; 
@@ -53,7 +54,7 @@ static void DefHndl_Dump(void *sp, uint32_t ipsr)
 }
 
 /* default interrupt/exception handler */
-void DefHndl_DefaultHandler(void)
+void OPTIMIZE ("O0") NAKED DefHndl_DefaultHandler(void)
 {
     /* read the stack pointer */
     void * sp = (void *)Arch_ReadMSP();
@@ -63,6 +64,6 @@ void DefHndl_DefaultHandler(void)
     /* dump all the information */
     DefHndl_Dump(sp, ipsr);
 
-    /* watchog will have the pleasure of kicking the system */
-    while (1);
+    /* reset the system */
+    Reset_ResetMCU();
 }

@@ -45,4 +45,8 @@ void Watchdog_Kick(void)
 {
 	/* reset counter */
 	WWDG->CR = WWDG_CR_T;
+    /* clear interrupt bit */
+	WWDG->SR = 0;
+	/* clear the interrupt */
+	NVIC_CLEARPENDING(STM32_INT_WWDG);
 }

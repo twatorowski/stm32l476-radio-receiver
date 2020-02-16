@@ -29,19 +29,12 @@ static int mode;
 /* data transfer complete callback */
 static int USBAudioSrc_EpTxCallback(void *arg)
 {   
-    /* cast argument */
-    usb_cbarg_t *ca = arg;
-    // /* extract transfer size TODO: */
-    // size_t transfer_size = ca ? ca->size : 0;
-    
     /* prepare the event argument */
-    usb_audio_evarg_t ea = { .mode = mode, .ptr = 0, .size = 0 };
+    usb_audio_evarg_t ea = { .mode = mode, 
+        .type = USB_AUDIO_SRC_EVARG_TYPE_TXDONE,
+        .ptr = 0, .size = 0 };
     /* notify */
     Ev_Notify(&usb_audio_ev, &ea);
-
-    /* send buffer contents */
-    USB_StartINTransfer(USB_EP1, (void *)ea.ptr, ea.size, 
-        USBAudioSrc_EpTxCallback);
     
     /* report status */
     return EOK;
@@ -92,28 +85,68 @@ static int USBAudioSrc_RequestCallback(void *arg)
     return EOK;
 }
 
+/* incomplete isochronous callback */
+static int USBAudioSrc_IncompleteIsoCallback(void *arg)
+{
+    /* disable endpoint */
+    // USB_DisableINEndpoint(USB_EP1);
+    USB_FlushTxFifo(USB_EP1);
+    /* prepare the event argument */
+    usb_audio_evarg_t ea = { .mode = mode, 
+        .type = USB_AUDIO_SRC_EVARG_TYPE_ISOINC,
+        .ptr = 0, .size = 0 };
+    /* notify */
+    Ev_Notify(&usb_audio_ev, &ea);
+
+    /* report status */
+    return EOK;
+}
+
 /* usb reset callback */
 static int USBAudioSrc_ResetCallback(void *arg)
 {
 	/* prepare fifos */
     /* interrupt transfers */
-	USB_SetTxFifoSize(USB_EP1, USB_AUDIO_SRC_STEREO_SIZE / 4);
+	USB_SetTxFifoSize(USB_EP1, USB_AUDIO_SRC_MAX_TFER_SIZE / 4);
 	/* flush fifos */
 	USB_FlushTxFifo(USB_EP1);
 	/* configure endpoints */
-	USB_ConfigureINEndpoint(USB_EP1, USB_EPTYPE_ISO, USB_AUDIO_SRC_STEREO_SIZE);
+	USB_ConfigureINEndpoint(USB_EP1, USB_EPTYPE_ISO, 
+        USB_AUDIO_SRC_MAX_TFER_SIZE);
 
     /* report status callback */
     return EOK;
+}
+
+/* usb callback */
+static int USBAudioSrc_USBCallback(void *arg)
+{
+    /* cast event argument */
+    usb_evarg_t *ea = arg;
+    /* processing according to event type */
+    switch (ea->type) {
+    case USB_EVARG_TYPE_RESET : USBAudioSrc_ResetCallback(arg); break;
+    case USB_EVARG_TYPE_ISOINC : USBAudioSrc_IncompleteIsoCallback(arg); break;
+    }
+
+    /* report status */
+	return EOK;
 }
 
 /* initialize audio source */
 int USBAudioSrc_Init(void)
 {
 	/* listen to usb reset events */
-	Ev_RegisterCallback(&usb_rst_ev, USBAudioSrc_ResetCallback);
+	Ev_RegisterCallback(&usb_ev, USBAudioSrc_USBCallback);
 	Ev_RegisterCallback(&usbcore_req_ev, USBAudioSrc_RequestCallback);
 
 	/* report status */
 	return EOK;
+}
+
+void USBAudioSrc_Transfer(void *ptr, size_t size)
+{
+    /* send buffer contents */
+    USB_StartINTransfer(USB_EP1, (void *)ptr, size, 
+        USBAudioSrc_EpTxCallback);
 }

@@ -784,35 +784,49 @@ static int USBCore_SetupCallback(void *arg)
 /* usb reset callback */
 static int USBCore_ResetCallback(void *arg)
 {
-	/* get frame size from device descriptor */
-	size_t max_size = USB_CTRLEP_SIZE;
+    /* get frame size from device descriptor */
+    size_t max_size = USB_CTRLEP_SIZE;
 
-	/* prepare reception fifo */
-	USB_SetRxFifoSize(USB_RX_FIFO_SIZE / 4);
-	/* prepare transmission fifo */
-	USB_SetTxFifoSize(USB_EP0, USB_CTRLEP_SIZE / 4);
+    /* prepare reception fifo */
+    USB_SetRxFifoSize(USB_RX_FIFO_SIZE / 4);
+    /* prepare transmission fifo */
+    USB_SetTxFifoSize(USB_EP0, USB_CTRLEP_SIZE / 4);
 
-	/* reset device state */
-	memset(&dev, 0, sizeof(dev));
+    /* reset device state */
+    memset(&dev, 0, sizeof(dev));
 
-	/* configure out endpoint for receiving status frames and data out frames */
-	USB_ConfigureOUTEndpoint(USB_EP0, USB_EPTYPE_CTL, max_size);
-	/* configure in endpoint for receiving data in frames */
-	USB_ConfigureINEndpoint(USB_EP0, USB_EPTYPE_CTL, max_size);
+    /* configure out endpoint for receiving status frames and data out frames */
+    USB_ConfigureOUTEndpoint(USB_EP0, USB_EPTYPE_CTL, max_size);
+    /* configure in endpoint for receiving data in frames */
+    USB_ConfigureINEndpoint(USB_EP0, USB_EPTYPE_CTL, max_size);
 
-	/* release semaphore */
-	USBCore_StartSETUPStage();
+    /* release semaphore */
+    USBCore_StartSETUPStage();
 
     /* report status */
     return EOK;
 }
 
+/* usb callback */
+static int USBCore_USBCallback(void *arg)
+{
+    /* cast event argument */
+    usb_evarg_t *ea = arg;
+    /* processing according to event type */
+    switch (ea->type) {
+    case USB_EVARG_TYPE_RESET : USBCore_ResetCallback(arg); break;
+    }
+
+    /* report status */
+	return EOK;
+}
+
 /* initialize usb core */
 int USBCore_Init(void)
 {
-	/* listen to usb reset events */
-	Ev_RegisterCallback(&usb_rst_ev, USBCore_ResetCallback);
+    /* listen to usb events */
+    Ev_RegisterCallback(&usb_ev, USBCore_USBCallback);
 
-	/* report status */
-	return EOK;
+    /* report status */
+    return EOK;
 }

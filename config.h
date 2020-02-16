@@ -71,6 +71,8 @@
 /** @{ */
 /** @brief disable/enable led globally */
 #define LED_ENABLE                                  1
+/** @brief show cpu activity on led    */
+#define LED_IDLE_SHOW_ACTIVITY                      1
 /** @} */
 
 /** @name Interrupt Priorities */
@@ -80,7 +82,7 @@
 /** @brief data sent callback priority (0x00 - highest, 0xf0 lowest) */
 #define INT_PRI_USART2_TX						    0x50
 /** @brief rf sampling priority */
-#define INT_PRI_RFIN                                0x10
+#define INT_PRI_RFIN                                0x30
 /** @brief decimator interrupt priority */
 #define INT_PRI_DEC                                 0x20    
 /** @brief exti multiplexer interrupt priority for exti[5-9] */
@@ -92,7 +94,7 @@
 /** @brief async delay priority */
 #define INT_PRI_AWAIT                               0x50
 /** @brief USB priority */
-#define INT_PRI_USB                                 0x50
+#define INT_PRI_USB                                 0x10
 /** @} */
 
 /** @name USART2 configuration */
@@ -165,6 +167,8 @@
 #define USB_AUDIO_SRC_STEREO_SIZE                   \
     (2 * USB_AUDIO_SRC_SAMPLING_RATE * USB_AUDIO_SRC_BITS_PER_SAMPLE / \
      USB_AUDIO_SRC_FRAME_RATE / 8)
+/** @brief usb audio max transfer size */
+#define USB_AUDIO_SRC_MAX_TFER_SIZE                 512
 /** @brief usb uses common fifo for reception so we need to set it's size to 
  * hold the largest packet possible */
 #define USB_RX_FIFO_SIZE                            512

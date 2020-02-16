@@ -47,16 +47,30 @@
 #define USB_EPTYPE_INT						0x03
 /** @} */
 
+/** @name event types */
+/** @{ */
+/** @brief bus reset */
+#define USB_EVARG_TYPE_RESET				0x00
+/** @brief incomplete isochronous transfer occured  */
+#define USB_EVARG_TYPE_ISOINC				0x01
+/** @} */
+
 /** @brief callback argument for StartXXXTransfer functions */
 typedef struct usb_cbarg {
-    /** error code */
+    /**< error code */
     int error;
-    /** transfer size */
+    /**< transfer size */
     size_t size;
 } usb_cbarg_t;
 
-/* system events: reset event */
-extern ev_t usb_rst_ev;
+/** @brief event argument for usb_ev */
+typedef struct usb_evarg {
+    /**< event type */
+    int type;
+} usb_evarg_t;
+
+/* usb events */
+extern ev_t usb_ev;
 
 
 /** @brief usb interrupt handler */

@@ -45,6 +45,9 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
     SET_EXC_VEC(STM32_EXC_HARDFAULT, DefHndl_DefaultHandler),
 
     /* interrupts */
+    /* watchog uses the default handler */
+    SET_INT_VEC(STM32_INT_WWDG, DefHndl_DefaultHandler),
+
     /* usart2 */
     SET_INT_VEC(STM32_INT_USART2, USART2_USART2Isr),
     SET_INT_VEC(STM32_INT_DMA1C7, USART2_DMA1C7Isr),

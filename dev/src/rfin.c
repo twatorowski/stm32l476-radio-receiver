@@ -34,7 +34,7 @@ static int samples_num;
 /* adc dma1 interrupt */
 void RFIn_DMA1C1Isr(void)
 {
-    /* event argument */
+    // /* event argument */
 	rfin_evarg_t ea = { .type = RFIN_TYPE_HT, .num = samples_num / 2, 
         .samples = samples };
 	/* get interrupt flags */
@@ -50,7 +50,6 @@ void RFIn_DMA1C1Isr(void)
 	/* notify others */
 	Ev_Notify(&rfin_ev, &ea);
 }
-
 
 /* radio frequency input pin */
 int RFIn_Init(void)
