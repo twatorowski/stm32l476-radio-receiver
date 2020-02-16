@@ -23,19 +23,68 @@
 /* system event */
 ev_t usb_audio_ev;
 
-/* interface opened? */
+/* current interface working mode */
 static int mode;
 
-/* data transfer complete callback */
-static int USBAudioSrc_EpTxCallback(void *arg)
-{   
-    /* prepare the event argument */
-    usb_audio_evarg_t ea = { .mode = mode, 
-        .type = USB_AUDIO_SRC_EVARG_TYPE_TXDONE,
-        .ptr = 0, .size = 0 };
-    /* notify */
-    Ev_Notify(&usb_audio_ev, &ea);
+/* usb sample type */
+typedef struct { int32_t l, r; } usb_buf_elem_t;
+/* data buffer */
+static usb_buf_elem_t buf[USB_AUDIO_SRC_SAMPLES_PER_FRAME * 4];
+/* linear memory space buffer */
+static usb_buf_elem_t buf_lin[USB_AUDIO_SRC_MAX_TFER_SIZE / 
+    sizeof(usb_buf_elem_t)];
+/* head and tail pointers */
+static uint32_t usb_head, usb_tail;
+
+/* get samples from the buffer */
+static int USBAudioSrc_GetSamples(usb_buf_elem_t *ptr, int num)
+{
+    /* space used within buffer, overall number frames to get, tail index */
+    uint32_t space_used, frames_to_get, tail;
+    /* samples to get before/after the circular buffer wraps */
+    uint32_t frames_to_get_bwrap, frames_to_get_awrap;
+
+    /* space used */
+    space_used = usb_head - usb_tail;
+    /* number of frames to get */
+    frames_to_get = min(space_used, (unsigned)num);
+    /* get the tail pointer */
+    tail = usb_tail % elems(buf);
+    /* limit the number of samples till wrapping occurs */
+    frames_to_get_bwrap = min(frames_to_get, elems(buf) - tail);
+    frames_to_get_awrap = frames_to_get - frames_to_get_bwrap;
+
+    /* read data */
+    for (int i = 0; i < (int)frames_to_get_bwrap; i++, ptr++)
+        ptr->l = buf[tail + i].l, ptr->r = buf[tail + i].r;
     
+    /* read data */
+    for (int i = 0; i < (int)frames_to_get_awrap; i++, ptr++)
+        ptr->l = buf[i].l, ptr->r = buf[i].r;
+    
+    /* update the tail pointer */
+    usb_tail += frames_to_get;
+    /* return the number of frames fetched from the buffer */
+    return frames_to_get;
+}
+
+/* data transfer complete callback */
+static int USBAudioSrc_DataCallback(void *arg)
+{   
+    /* space used in buffer */
+    uint32_t space_used = usb_head - usb_tail;
+    /* number of frames to fetch */
+    uint32_t frames_to_get = USB_AUDIO_SRC_SAMPLES_PER_FRAME;
+
+    /* buffer is getting full, use larger transfers */
+    if (space_used > elems(buf) / 2)
+        frames_to_get = elems(buf_lin);
+
+    /* get samples to the buffer */
+    int frames_fetched = USBAudioSrc_GetSamples(buf_lin, frames_to_get);
+    /* send buffer contents */
+    USB_StartINTransfer(USB_EP1, buf_lin, 
+        frames_fetched * sizeof(usb_buf_elem_t), USBAudioSrc_DataCallback);
     /* report status */
     return EOK;
 }
@@ -67,13 +116,19 @@ static int USBAudioSrc_RequestCallback(void *arg)
                 /* alternate setting 1: sampling mode */
                 if (!mode && iface_alt_num) {
                     /* start sending audio */
-                    USBAudioSrc_EpTxCallback(0);
+                    USBAudioSrc_DataCallback(0);
                 /* alternate setting 0: disabled mode */
                 } else if (mode && !iface_alt_num) {
                     USB_DisableINEndpoint(USB_EP1);
                 }
                 /* update the 'opened' state */
                 mode = iface_alt_num;
+
+                /* prepare event argument */
+                usb_audio_evarg_t ea = { .mode = mode };
+                /* generate an event */
+                Ev_Notify(&usb_audio_ev, &ea);
+
                 /* set status code */
                 a->status = EOK;
 			} break;   
@@ -88,15 +143,10 @@ static int USBAudioSrc_RequestCallback(void *arg)
 /* incomplete isochronous callback */
 static int USBAudioSrc_IncompleteIsoCallback(void *arg)
 {
-    /* disable endpoint */
-    // USB_DisableINEndpoint(USB_EP1);
+    /* flush data */
     USB_FlushTxFifo(USB_EP1);
-    /* prepare the event argument */
-    usb_audio_evarg_t ea = { .mode = mode, 
-        .type = USB_AUDIO_SRC_EVARG_TYPE_ISOINC,
-        .ptr = 0, .size = 0 };
-    /* notify */
-    Ev_Notify(&usb_audio_ev, &ea);
+    /* restart audio process if possible */
+    USBAudioSrc_DataCallback(0);
 
     /* report status */
     return EOK;
@@ -105,6 +155,14 @@ static int USBAudioSrc_IncompleteIsoCallback(void *arg)
 /* usb reset callback */
 static int USBAudioSrc_ResetCallback(void *arg)
 {
+    /* reset mode */
+    mode = USB_AUDIO_SRC_MODE_OFF;
+
+    /* prepare event argument */
+    usb_audio_evarg_t ea = { .mode = mode };
+    /* generate an event */
+    Ev_Notify(&usb_audio_ev, &ea);
+
 	/* prepare fifos */
     /* interrupt transfers */
 	USB_SetTxFifoSize(USB_EP1, USB_AUDIO_SRC_MAX_TFER_SIZE / 4);
@@ -144,9 +202,35 @@ int USBAudioSrc_Init(void)
 	return EOK;
 }
 
-void USBAudioSrc_Transfer(void *ptr, size_t size)
+/* put samples into the usb buffer */
+int USBAudioSrc_PutSamples(const int32_t *l, const int32_t *r, int num)
 {
-    /* send buffer contents */
-    USB_StartINTransfer(USB_EP1, (void *)ptr, size, 
-        USBAudioSrc_EpTxCallback);
+    /* space left, overall number of frames to store, head element index */
+    uint32_t space_left, frames_to_store, head;
+    /* samples to store before/after the circular buffer wraps */
+    uint32_t frames_to_store_bwrap, frames_to_store_awrap;
+
+    /* space left */
+    space_left = elems(buf) - (usb_head - usb_tail);
+    /* buffer is full */
+    frames_to_store = min(space_left, (unsigned)num);
+    
+    /* get the head pointer */
+    head = usb_head % elems(buf);
+    /* limit the number of samples till/after the wrapping occurs */
+    frames_to_store_bwrap = min(frames_to_store, elems(buf) - head);
+    frames_to_store_awrap = frames_to_store -frames_to_store_bwrap;
+    
+    /* store data before the buffer wraps */
+    for (int i = 0; i < (int)frames_to_store_bwrap; i++)
+        buf[head + i].l = *l++, buf[head + i].r = *r++;
+
+    /* store data */
+    for (int i = 0; i < (int)frames_to_store_awrap; i++)
+        buf[i].l = *l++, buf[i].r = *r++;
+        
+    /* update the head pointer */
+    usb_head += frames_to_store;
+    /* return the number of frames stored */
+    return frames_to_store;
 }
