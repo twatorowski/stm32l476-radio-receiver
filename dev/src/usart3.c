@@ -128,7 +128,7 @@ err_t USART3_Recv(void *ptr, size_t size, dtime_t timeout)
     time_t ts = time(0);
 
     /* wait for data loop */
-    while ((head = elems(circ) - DMA1C5->NDTR) - tail == 0) {
+    while ((head = elems(circ) - DMA1C1->NDTR) - tail == 0) {
         /* check for timeout */
         if (timeout && dtime(time(0), ts) > timeout)
             return ETIMEOUT;

@@ -14,6 +14,9 @@
 #include "dev/usart3.h"
 #include "sys/yield.h"
 
+/* tests */
+#include "test/yield_task_usart3.h"
+
 /* program init function, called before main with interrupts disabled */
 void Init(void)
 {
@@ -33,6 +36,10 @@ int Main(void)
     Led_Init();
     /* set led state */
     Led_SetState(1, LED_GRN | LED_RED | LED_YEL);
+
+    /* tests */
+    /* test usart 3 communication */
+    TestYieldTaskUSART3_Init();
 
     /* execution loop */
     while (1) {
