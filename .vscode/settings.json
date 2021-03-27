@@ -1,0 +1,27 @@
+{
+    "C_Cpp.default.systemIncludePath": [
+        ".",
+        "./.includes/arm-none-eabi/include",
+        "./.includes/lib/gcc/arm-none-eabi/10.2.1/include",
+    ],
+    "C_Cpp.default.includePath": [
+        ".",
+        "./.includes/arm-none-eabi/include",
+        "./.includes/lib/gcc/arm-none-eabi/10.2.1/include",
+    ],
+    "files.associations": {
+        "compiler.h": "c",
+        "assert.h": "c",
+        "startup.h": "c",
+        "linker.h": "c",
+        "msblsb.h": "c",
+        "scb.h": "c",
+        "elems.h": "c",
+        "gpio.h": "c",
+        "usart3.h": "c",
+        "yield.h": "c"
+    },
+    "C_Cpp.default.cStandard": "c11",
+    "C_Cpp.default.cppStandard": "c++11",
+    "C_Cpp.default.intelliSenseMode": "gcc-x64",
+}

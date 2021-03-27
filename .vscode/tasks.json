@@ -1,0 +1,96 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Docker",
+            "type": "shell",
+            "command": 
+                "docker",
+            "args": [
+                "run",
+                "--name", "${workspaceFolderBasename}",
+                "--rm",
+                "-v", "${cwd}/:/${workspaceFolderBasename}",
+                "-d",
+                "--network=host",
+                "-it",
+                "twatorowski/gcc-arm-none-eabi"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": 
+                "docker",
+            "args": [
+                "exec",
+                "-w", "/${workspaceFolderBasename}",
+                "${workspaceFolderBasename}",
+                "make", "all",
+            ],
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": 
+                "docker",
+            "args": [
+                "exec",
+                "-w", "/${workspaceFolderBasename}",
+                "${workspaceFolderBasename}",
+                "make", "clean",
+            ],
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Start OpenOCD",
+            "type": "shell",
+            "command": "openocd",
+            "problemMatcher": [],
+            "args": [
+                "-f", "board/st_nucleo_h743zi.cfg",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Copy Includes",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "exec",
+                "-w",
+                "/gcc-arm-none-eabi",
+                "${workspaceFolderBasename}",
+                "sh",
+                "-c",
+                "find . -name \"*.h\" | cpio -updm /${workspaceFolderBasename}/.includes"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        
+        
+    ]
+}
