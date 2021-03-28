@@ -19,6 +19,7 @@
 #include "stm32h743/stm32h743.h"
 #include "stm32h743/nvic.h"
 #include "stm32h743/scb.h"
+#include "sys/time.h"
 #include "sys/yield.h"
 #include "util/elems.h"
 
@@ -301,4 +302,10 @@ void Yield(void)
 {
     /* call the scheduler */
     Yield_CallScheduler();
+}
+
+/* refrain from the task execution for the time being */
+void Yield_Sleep()
+{
+
 }
