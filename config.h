@@ -48,6 +48,8 @@
 /** @{ */
 /** @brief Maximal number of tasks */
 #define OS_MAX_TASKS                                8
+/** @brief Maximal number of tasks */
+#define SYS_HEAP_SIZE                               (16 * 1024)
 /** @} */
 
 /** @name USART3 Configuration */

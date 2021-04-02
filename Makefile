@@ -27,7 +27,7 @@ SRC += ./dev/src/led.c
 
 # operating system guts
 SRC += ./sys/src/critical.c ./sys/src/yield.c
-SRC += ./sys/src/sleep.c
+SRC += ./sys/src/sleep.c ./sys/src/heap.c
 
 # tests
 SRC += ./test/src/yield_task_usart3.c
