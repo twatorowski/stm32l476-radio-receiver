@@ -10,8 +10,12 @@
 #ifndef ERR_H
 #define ERR_H
 
+#include <stdint.h>
+
 /** error codes present in system */
 typedef enum err {
+    /** secure the size of enum */
+    _MAX_VAL = INT_FAST32_MAX,
     /* general errors */
     /** no error */
     EOK = 0,
