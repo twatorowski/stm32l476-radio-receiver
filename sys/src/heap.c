@@ -20,7 +20,7 @@ typedef struct block {
     int used;
     /* size of this block */
     size_t size;
-    /* pointers to next or previous node */
+    /* pointers to next node */
     struct block *prev, *next;
     /* memory */
     uint8_t mem[];
@@ -38,7 +38,7 @@ err_t Heap_Init(void)
     /* setup block to */
     b->size = sizeof(heap);
     /* there is no next nor previous block wrt to this one */
-    b->prev = b->next = 0;
+    b->prev = 0; b->next = 0;
     /* mark as free */
     b->used = 0;
 
@@ -75,7 +75,7 @@ void * Heap_Malloc(size_t size)
     if (best_fit->size >= size + 2 * sizeof(block_t)) {
         /* create a pointer to the new block */
         block_t *new_block = (block_t *)((uintptr_t)best_fit + size);
-        /* fill in */
+        /* place new block after current block */
         new_block->prev = best_fit;
         new_block->next = best_fit->next;
         new_block->size = best_fit->size - size;
@@ -95,14 +95,14 @@ void * Heap_Malloc(size_t size)
 void Heap_Free(void *ptr)
 {
     /* compute the block address */
-    block_t *b = (block_t *)((uintptr_t)ptr - sizeof(block_t));
+    block_t *nb, *pb, *b = (block_t *)((uintptr_t)ptr - sizeof(block_t));
     /* clear block used flag */
     b->used = 0;
-    
+
     /* join with next segment if it's free */
-    if (b->next && b->next->used == 0)
-        b->size += b->next->size, b->next  = b->next->next;
+    if ((nb = b->next) && nb->used == 0)
+        b->size += nb->size, b->next = nb->next, nb->next->prev = b;
     /* join with previous segment if it's free */
-    if (b->prev && b->prev->used == 0)
-        b->prev->size += b->size, b->prev->next = b->next;
+    if ((pb = b->prev) && pb->used == 0)
+        pb->size += b->size, pb->next = b->next, b->next->prev = pb;
 }

@@ -12,14 +12,18 @@
 #include "dev/led.h"
 #include "dev/systime.h"
 #include "dev/usart3.h"
+#include "sys/heap.h"
 #include "sys/yield.h"
 
 /* tests */
 #include "test/yield_task_usart3.h"
+#include "test/heap.h"
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
 {
+    /* initialize dynamic memory */
+    Heap_Init();
     /* start the context switcher */
     Yield_Init();
 }
@@ -39,7 +43,8 @@ int Main(void)
 
     /* tests */
     /* test usart 3 communication */
-    TestYieldTaskUSART3_Init();
+    // TestYieldTaskUSART3_Init();
+    TestHeap_Init();
 
     /* execution loop */
     while (1) {

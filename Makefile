@@ -31,6 +31,7 @@ SRC += ./sys/src/sleep.c ./sys/src/heap.c
 
 # tests
 SRC += ./test/src/yield_task_usart3.c
+SRC += ./test/src/heap.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c
