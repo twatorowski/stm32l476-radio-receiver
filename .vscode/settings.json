@@ -21,7 +21,9 @@
         "usart3.h": "c",
         "yield.h": "c",
         "yield_task_usart3.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "lock.h": "c",
+        "time.h": "c"
     },
     "C_Cpp.default.cStandard": "c11",
     "C_Cpp.default.cppStandard": "c++11",
