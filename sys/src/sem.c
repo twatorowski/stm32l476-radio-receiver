@@ -8,18 +8,18 @@
  */
 
 #include "err.h"
-#include "sys/lock.h"
+#include "sys/sem.h"
 #include "sys/time.h"
 #include "sys/yield.h"
 
 /* lock resource */
-err_t Lock_Lock(sslock_t *lock, dtime_t timeout)
+err_t Sem_Lock(sem_t *sem, dtime_t timeout)
 {
     /* get current time */
     time_t ts = time(0);
 
     /* loop as long as */
-    while (!lock) {
+    while (*sem != SEM_RELEASED) {
         /* check for timeout */
         if (timeout && dtime(time(0), ts) > timeout)
             return ETIMEOUT;
@@ -27,16 +27,16 @@ err_t Lock_Lock(sslock_t *lock, dtime_t timeout)
         Yield();
     }
     /* locked! */
-    *lock = LOCK_LOCKED;
+    *sem = SEM_LOCKED;
     /* report success */
     return EOK;
 }
 
 /* release underlying resource */
-err_t Lock_Release(sslock_t *lock)
+err_t Sem_Release(sem_t *sem)
 {
     /* release and wake-up other tasks */
-    *lock = LOCK_RELEASED; Yield();
+    *sem = SEM_RELEASED; Yield();
     /* report status */
     return EOK;
 }

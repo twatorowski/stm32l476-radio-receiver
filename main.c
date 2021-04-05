@@ -21,6 +21,7 @@
 /* tests */
 #include "test/yield_task_usart3.h"
 #include "test/heap.h"
+#include "test/lock.h"
 
 /* program init function, called before main with interrupts disabled */
 void Init(void)
@@ -50,10 +51,12 @@ int Main(void)
     /* tests */
     /* test usart 3 communication */
     // TestYieldTaskUSART3_Init();
-    TestHeap_Init();
+    // TestHeap_Init();
+    TestLock_Init();
 
     /* execution loop */
     while (1) {
+        Yield();
     }
 
     /* never reached */

@@ -24,7 +24,10 @@
         "debug.h": "c",
         "lock.h": "c",
         "time.h": "c",
-        "systime.h": "c"
+        "systime.h": "c",
+        "sleep.h": "c",
+        "led.h": "c",
+        "sem.h": "c"
     },
     "C_Cpp.default.cStandard": "c11",
     "C_Cpp.default.cppStandard": "c++11",

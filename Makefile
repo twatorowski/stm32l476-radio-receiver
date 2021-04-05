@@ -29,10 +29,11 @@ SRC += ./dev/src/led.c
 # operating system guts
 SRC += ./sys/src/critical.c ./sys/src/yield.c
 SRC += ./sys/src/sleep.c ./sys/src/heap.c
+SRC += ./sys/src/sem.c
 
 # tests
 SRC += ./test/src/yield_task_usart3.c
-SRC += ./test/src/heap.c
+SRC += ./test/src/heap.c ./test/src/lock.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

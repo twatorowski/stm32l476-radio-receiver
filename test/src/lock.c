@@ -9,13 +9,13 @@
 
 #include "err.h"
 #include "dev/led.h"
-#include "sys/lock.h"
+#include "sys/sem.h"
 #include "sys/sleep.h"
 #include "sys/time.h"
 #include "sys/yield.h"
 
 /* led lock */
-static sslock_t led_lock;
+static sem_t led_lock;
 /* led task for setting the led on or off */
 static void TestLock_LedTask(void *arg)
 {
@@ -25,13 +25,13 @@ static void TestLock_LedTask(void *arg)
     /* endless task */
     while (1) {
         /* lock the led resource */
-        Lock_Lock(&led_lock, 0);
+        Sem_Lock(&led_lock, 0);
         /* set the state */
         Led_SetState(enable, LED_RED);
         /* wait */
         Sleep(1000);
         /* release the lock */
-        Lock_Release(&led_lock);
+        Sem_Release(&led_lock);
     }
 }
 

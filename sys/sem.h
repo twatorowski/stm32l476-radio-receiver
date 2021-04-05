@@ -7,33 +7,33 @@
  * @brief Semaphore lock
  */
 
-#ifndef SYS_LOCK
-#define SYS_LOCK
+#ifndef _SYS_SEM_H
+#define _SYS_SEM_H
 
 #include "err.h"
 #include "sys/time.h"
 
 /** semaphore lock typedef */
-typedef enum lock { LOCK_RELEASED, LOCK_LOCKED } sslock_t;
+typedef enum sem { SEM_RELEASED, SEM_LOCKED } sem_t;
 
 /**
  * @brief Lock the resource
  * 
- * @param lock lock to acquire
+ * @param sem lock to acquire
  * @param timeout locking timeout
  * 
  * @return err_t EOK or ETIMEOUT
  */
-err_t Lock_Lock(sslock_t *lock, dtime_t timeout);
+err_t Sem_Lock(sem_t *sem, dtime_t timeout);
 
 /**
  * @brief elease underlying resource 
  * 
- * @param lock lock to be released
+ * @param sem lock to be released
  * 
  * @return err_t status 
  */
-err_t Lock_Release(sslock_t *lock);
+err_t Sem_Release(sem_t *sem);
 
 
-#endif /* SYS_LOCK */
+#endif /* _SYS_LOCK */
