@@ -20,6 +20,7 @@ HW_VER_BUILD = 0
 # ----------------------------- SOURCES -----------------------------
 # put all of your sources here (use / as path separator)
 SRC += ./main.c ./vectors.c ./reset.c ./defhndl.c ./startup.c
+SRC += ./debug.c
 
 # device drivers
 SRC += ./dev/src/usart3.c ./dev/src/systime.c

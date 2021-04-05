@@ -7,16 +7,19 @@
  * @brief Debugging macros
  */
 
-#ifndef DEV_DEBUG_H_
-#define DEV_DEBUG_H_
+#ifndef DEBUG_
+#define DEBUG_
 
 #include <stdint.h>
 #include <stddef.h>
 
+#include "config.h"
 #include "compiler.h"
-#include "sys/sem.h"
+#include "dev/usart3.h"
+#include "sys/yield.h"
 #include "util/stdio.h"
 #include "util/concatstr.h"
+
 
 /* disables debug globally */
 #if !(DEVELOPMENT)
@@ -26,23 +29,31 @@
 /* debug enabled? */
 #ifdef DEBUG
 
+/* debug buffer */
+extern char debug_buf[];
+/** #brief length of the data in debug buffer */
+extern size_t debug_buf_len;
+
 /* debug message prefix */
 #define DBG_MSG_PRFX                                                        \
     "+D: [" __FILE__ ":" CONCATSTR(__LINE__) "]"
 
 /**
- * @brief non-blocking debug routine. To be used like printf()
+ * @brief debug routine
  */
 #define dprintf(fmt, ...)                                                   \
     /* encapsulated in a loop, to make it compiler-proof :) */              \
     do {                                                                    \
-        /* buffer */                                                        \
-        char __debug_buf[AT_MAX_LINE_LEN];                                  \
+        /* debug buffer is occupied? */                                     \
+        while (debug_buf_len)                                               \
+            Yield();                                                        \
         /* produce string */                                                \
-        int __l = snprintf(__debug_buf, sizeof(__debug_buf),                \
+        debug_buf_len = snprintf(debug_buf, DEBUG_MAX_LINE_LEN,             \
             DBG_MSG_PRFX fmt, ## __VA_ARGS__);                              \
         /* try to send debug over the tp */                                 \
-        ATNtfDebug_PutDebugData(__debug_buf, __l);                          \
+        USART3_Send(debug_buf, debug_buf_len, 0);                              \
+        /* release the buffer */                                            \
+        debug_buf_len = 0;                                                  \
     } while (0)
 
 #else
@@ -56,11 +67,5 @@
 
 #endif
 
-/**
- * @brief Initialize debug module, print last fatal exception information.
- * 
- * @return int status (@ref ERR_ERROR_CODES)
- */
-int Debug_Init(void);
 
-#endif /* DEV_DEBUG_H_ */
+#endif /* DEBUG_ */

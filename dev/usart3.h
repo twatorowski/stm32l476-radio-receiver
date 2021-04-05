@@ -7,8 +7,8 @@
  * @brief USART3 Driver
  */
 
-#ifndef DEV_USART3_H
-#define DEV_USART3_H
+#ifndef DEV_USART3
+#define DEV_USART3
 
 #include <stddef.h>
 
@@ -47,4 +47,4 @@ err_t USART3_Send(const void *ptr, size_t size, dtime_t timeout);
  */
 err_t USART3_Recv(void *ptr, size_t size, dtime_t timeout);
 
-#endif /* DEV_USART3_H */
+#endif /* DEV_USART3 */

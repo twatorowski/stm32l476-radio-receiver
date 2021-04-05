@@ -7,8 +7,8 @@
  * @brief Main configuration file
  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#ifndef CONFIG
+#define CONFIG
 
 #include <stdint.h>
 
@@ -40,6 +40,8 @@
 /** @{ */
 /** @brief debugging is enabled?  */
 #define DEBUG_ENABLED                               DEVELOPMENT
+/** @brief maximal length of the debug line string  */
+#define DEBUG_MAX_LINE_LEN                          128
 /** @} */
 
 
@@ -59,4 +61,4 @@
 /** @} */
 
 
-#endif /* CONFIG_H_ */
+#endif /* CONFIG */

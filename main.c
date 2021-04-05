@@ -15,6 +15,9 @@
 #include "sys/heap.h"
 #include "sys/yield.h"
 
+#define DEBUG
+#include "debug.h"
+
 /* tests */
 #include "test/yield_task_usart3.h"
 #include "test/heap.h"
@@ -40,6 +43,9 @@ int Main(void)
     Led_Init();
     /* set led state */
     Led_SetState(1, LED_GRN | LED_RED | LED_YEL);
+
+    /* show some debug activity */
+    dprintf("Welcome!\n", 0);
 
     /* tests */
     /* test usart 3 communication */
