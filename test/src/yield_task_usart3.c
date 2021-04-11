@@ -14,9 +14,6 @@
 #include "dev/usart3.h"
 #include "sys/yield.h"
 
-/* stacks for tasks */
-static uint32_t stack[128];
-
 /* 1st task handler */
 static void TestYieldTaskUSART3_EchoTask(void *arg)
 {
@@ -42,12 +39,7 @@ static void TestYieldTaskUSART3_EchoTask(void *arg)
 err_t TestYieldTaskUSART3_Init(void)
 {
     /* create two tasks */
-    Yield_CreateTask(TestYieldTaskUSART3_EchoTask, 0, stack, sizeof(stack));
-
-    /* start their execution */
-    while (1)
-        Yield();
-    
+    Yield_CreateTask(TestYieldTaskUSART3_EchoTask, 0, 512);
     /* return status */
     return EOK;
 }

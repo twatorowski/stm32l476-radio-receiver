@@ -31,10 +31,8 @@ static void TestLEDBlink_Task(void *arg)
 /* initialize the test */
 err_t TestLEDBlink_Init(void)
 {
-    /* tasks' stack */
-    static uint32_t stack[128];
     /* start the task */
-    Yield_CreateTask(TestLEDBlink_Task, 0, stack, sizeof(stack));
+    Yield_CreateTask(TestLEDBlink_Task, 0, 512);
 
     /* report status */
     return EOK;

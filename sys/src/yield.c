@@ -19,6 +19,7 @@
 #include "stm32h743/stm32h743.h"
 #include "stm32h743/nvic.h"
 #include "stm32h743/scb.h"
+#include "sys/heap.h"
 #include "sys/time.h"
 #include "sys/yield.h"
 #include "util/elems.h"
@@ -242,16 +243,10 @@ err_t Yield_Init(void)
 }
 
 /* prepare task for the execution */
-err_t Yield_CreateTask(void (*handler)(void *), void *arg, void *stack, 
-    size_t stack_size)
+err_t Yield_CreateTask(void (*handler)(void *), void *arg, size_t stack_size)
 {
     /* this pointer will hold the task descriptor table entry */
     task_t *t;
-
-    /* initial checks */
-    assert(((uintptr_t)stack & 3) == 0, "stack must be word-aligned", handler);
-    assert((stack_size & 3) == 0, "stack size must be a multiple of 4", handler);
-    assert(stack_size >= sizeof(task_frame_t), "stack size is too small", handler);
 
     /* look for a free entry within the task descriptor table */
     for (t = tasks;; t = t == (tasks + elems(tasks) - 1) ? tasks: t + 1) {
@@ -264,6 +259,14 @@ err_t Yield_CreateTask(void (*handler)(void *), void *arg, void *stack,
             Yield();
         }
     }
+
+    /* allocate memory for the stack */
+    void * stack = Heap_Malloc(stack_size);
+    /* initial checks */
+    assert(stack, "stack memory cannot be allocated", handler);
+    assert(((uintptr_t)stack & 3) == 0, "stack must be word-aligned", handler);
+    assert((stack_size & 3) == 0, "stack size must be a multiple of 4", handler);
+    assert(stack_size >= sizeof(task_frame_t), "stack size is too small", handler);
 
     /* store execution handler and it's argument */
     t->handler = handler; t->handler_arg = arg;
@@ -302,10 +305,4 @@ void Yield(void)
 {
     /* call the scheduler */
     Yield_CallScheduler();
-}
-
-/* refrain from the task execution for the time being */
-void Yield_Sleep()
-{
-
 }

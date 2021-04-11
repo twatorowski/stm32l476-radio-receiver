@@ -38,11 +38,9 @@ static void TestLock_LedTask(void *arg)
 /* initialize test */
 err_t TestLock_Init(void)
 {
-    static uint32_t stack[2][128];
-
     /* start tasks */
-    Yield_CreateTask(TestLock_LedTask, (void *)0, stack[0], sizeof(stack[0]));
-    Yield_CreateTask(TestLock_LedTask, (void *)1, stack[1], sizeof(stack[1]));
+    Yield_CreateTask(TestLock_LedTask, (void *)0, 512);
+    Yield_CreateTask(TestLock_LedTask, (void *)1, 512);
 
     /* report status */
     return EOK;

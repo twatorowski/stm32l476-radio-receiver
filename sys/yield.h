@@ -38,12 +38,10 @@ err_t Yield_Init(void);
  * @param handler task handler routine
  * @param arg argument passed to that handler
  * @param stack stack for the task
- * @param stack_size stack size
  *
  * @return err_t error code is something goes wrong 
  */
-err_t Yield_CreateTask(yield_hndl_t handler, void *arg, void *stack, 
-    size_t stack_size);
+err_t Yield_CreateTask(yield_hndl_t handler, void *arg, size_t stack_size);
 
 
 /**
