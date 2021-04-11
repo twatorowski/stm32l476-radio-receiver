@@ -94,6 +94,11 @@ void * Heap_Malloc(size_t size)
 /* free previously allocated block of memory */
 void Heap_Free(void *ptr)
 {
+    /* we support passing in null pointers so that the caller can call free on 
+     * allocations that failed */
+    if (!ptr)
+        return;
+    
     /* compute the block address */
     block_t *nb, *pb, *b = (block_t *)((uintptr_t)ptr - sizeof(block_t));
     /* clear block used flag */
