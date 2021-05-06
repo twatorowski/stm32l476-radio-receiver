@@ -29,12 +29,20 @@ typedef struct {
     reg32_t SCR;
     reg32_t CCR;
     reg8_t SHPR[12];
-    reg32_t SHCRS;
+    reg32_t SHCSR;
     reg32_t CFSR;
     reg32_t HFSR;
-    reg8_t RESERVED0[4];
+    reg32_t DFSR;
     reg32_t MMFAR;
     reg32_t BFAR;
+    reg32_t AFSR;
+    reg32_t PFR[2];
+    reg32_t DFR;
+    reg32_t ADR;
+    reg32_t MMFR[4];
+    reg32_t ISAR[5];
+    reg32_t RESERVED0[5];
+    reg32_t CPACR;
 } scb_t;
 
 /****************** bit definitions for CPUID register ******************/
