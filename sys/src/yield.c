@@ -205,12 +205,10 @@ void NAKED OPTIMIZE ("Os") Yield_PendSVHandler(void)
 
         /* read the EXC_RETURN code for the next task */
         "ldmia %[sp]!, {lr}             \n"
-
         /* test for the floating point context */
         "tst lr, #0x00000010            \n"
         "it eq                          \n"
         "vldmiaeq %[sp]!, {s16-s31}	    \n"
-
         /* read all the registers that we need to read manually */
         "ldmia %[sp]!, {r4-r11}         \n"
         
@@ -221,14 +219,12 @@ void NAKED OPTIMIZE ("Os") Yield_PendSVHandler(void)
         "ite eq                         \n"
         "msreq msp, %[sp]               \n"
         "msrne psp, %[sp]               \n"
-
         /* restore the interrupts */
         "cpsie i                        \n"
         /* continue with next task by returning appropriate EXC_RETURN code */
         "bx lr                          \n"
         /* write operands */
         : [sp] "+r" (sp)
-        : [is_task0] "r" (task == &tasks[0]) 
     );
 }
 
@@ -279,8 +275,14 @@ err_t Yield_CreateTask(void (*handler)(void *), void *arg, size_t stack_size)
     /* set stack pointer to the top of the stack - the size of the stack frame. 
      * this will allow the context switch routine to load the values from the 
      * stack */
-    t->sp = (task_frame_t *)((uintptr_t)stack + stack_size - 
-        sizeof(task_frame_t));
+    t->sp = (task_frame_t *)((uintptr_t)stack + stack_size);
+    /* ensure that we are aligned to 8 byte boundary after the context switcher 
+     * pops all the registers from the stack - this is what calling 
+     * convention expects. Then, move the pointer back by the amount required to 
+     * fit the basic stack frame */
+    t->sp = (task_frame_t *)(((uintptr_t)t->sp & ~0x7) - 
+        sizeof(task_frame_basic_t));
+
     /* default status register value: Thumb bit set */
     t->sp->basic.xpsr = 0x01000000;
     /* set the program counter to point to the task routine */
@@ -291,7 +293,8 @@ err_t Yield_CreateTask(void (*handler)(void *), void *arg, size_t stack_size)
      * function argument is kept by ARM calling convention */
     t->sp->basic.r0 = (uint32_t)t;
     /* exc return code indicates basic stack frame (no fpu) and psp as stack 
-     * pointer - every new task starts that way, but things may evolve :-) */
+     * pointer - every new task starts that way, but things may evolve if user 
+     * uses floating point arithmetic operations */
     t->sp->basic.exc_return = 0xFFFFFFFD;
     /* set task state to pending - scheduler will take it from here */
     t->state = TASK_PENDING;
