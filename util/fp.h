@@ -31,33 +31,37 @@
 #define fp_INFN                             (-INFINITY)
 
 /** @brief square root */
-#define fp_sqrt(x)							Arch_VSQRT(x)
+#define fp_sqrtf(x)							Arch_VSQRT(x)
 /** @brief absolute value */
-#define fp_fabs(x)							Arch_VABS(x)
+#define fp_fabsf(x)							Arch_VABS(x)
 /** @brief power function */
-#define fp_pow(a, b)						pow(a, b)
+#define fp_powf(a, b)						pow(a, b)
 /** @brief cube root function */
-#define fp_cbrt(x)							cbrtf(x)
+#define fp_cbrtf(x)							cbrtf(x)
 /** @brief rounding function */
-#define fp_round(a)							roundf(a)
+#define fp_roundf(a)						roundf(a)
 /** @brief rounding function */
-#define fp_floor(a)							floorf(a)
+#define fp_floorf(a)					    floorf(a)
 /** @brief ceil function */
-#define fp_ceil(x)							ceilf(x)
+#define fp_ceilf(x)							ceilf(x)
 /** @brief square */
 #define fp_sq(x)							((x) * (x))
 /** @brief hypothenuse	*/
-#define fp_hypot(x, y)						hypot(x, y)
+#define fp_hypotf(x, y)						hypotf(x, y)
 /** @brief arc tangent */
 #define fp_atan2(y, x)						atan2(y, x)
 /** @brief sine */
-#define fp_sin(x)							sinf(x)
+#define fp_sinf(x)							sinf(x)
 /** @brief cosine */
-#define fp_cos(x)							cosf(x)
+#define fp_cosf(x)							cosf(x)
 /** @brief natural logarithm */
-#define fp_log(x)                           logf(x)
+#define fp_logf(x)                          logf(x)
 /** @brief break into integral and fractional part */
-#define fp_modf(x, int_part)                modff(x, int_part)
+#define fp_modff(x, int_part)               modff(x, int_part)
+/** @brief exponent function */
+#define fp_expf(x)                          expf(x)
+/** @brief extract the mantissa and exponent */
+#define fp_frexpf(x, e)                     frexpf(x, e)
 
 /** @brief is zero */
 #define fp_zero(x)							(fabs(x) < fp_EPSILON)

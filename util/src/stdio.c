@@ -12,9 +12,13 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include "assert.h"
 #include "compiler.h"
+#include "util/abs.h"
+#include "util/elems.h"
 #include "util/minmax.h"
 #include "util/stdio.h"
+#include "util/fp.h"
 
 /* parameter may be none */
 #define PARAMETER_NONE                      -1
@@ -623,155 +627,187 @@ static int print_int(char *dst, size_t size, const void *ptr, struct fs *fs)
     return d - dst;
 }
 
-/* print a double */
+/* print floating point number */
 static int print_double(char *dst, size_t size, const void *ptr, struct fs *fs)
 {
-    /* print buffer */
-    char num[30];
-    /* current pointer within the num pointer, destination pointer */
-    char *n = num, *d = dst, *n_num_start = num;
-    /* typemodifier shorthand */
-    int tm = fs->type_modifiers, special_num = 0;
-    /* number of characters in the print buffer */
-    int e = 0, negative = 0, precision = 4, digit, n_len, base = 10;
-    /* leading zeros length leading spaces length, prefix length */
-    int lz_len = 0, ls_len = 0, p_len = 0;
-    /* processed value */
-    float val, val_int;
+    /* scratch-pad buffers for the value and optional exponent */
+    char nbuf[48] = {0}, *nptr = nbuf;
+    /* exponent buffer */
+    char ebuf[8] = {0}, *eptr = ebuf;
+    /* prefix buffer */
+    char pbuf[8] = {0}, *pptr = pbuf;
 
-    /* possible types of input */
-    union {
-        float f; double d; long double ld;
-    } PACKED const *val_ptr = ptr;
-    
-    /* every value gets converted to double here */
-    val = fs->length == LENGTH_LONG_DOUBLE ? val_ptr->ld : val_ptr->d;
-    /* sorry, only exp or hexfloat form here! none of that rookie formats are 
-     * allowed! */
-    if (!(tm & TYPEMOD_EXP) && !(tm & TYPEMOD_HEXFLOAT))
-        return 0;
-    
-    /* update the base! */
-    if (tm & TYPEMOD_HEXFLOAT)
-        base = 16;
+    /* binary logarithm of 10 or 16, natural logarithm of 10  or 16: these are 
+     * the two bases that we support */
+    const float lb10 = 3.321928095, ln10 = 2.302585093;
+    const float lb16 = 4.000000000, ln16 = 2.772588722;
+    /* powers of base 10 */
+    const float p10[] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 
+        100000000 };
+    /* powers of base 16 */
+    const float p16[] = { 0x1, 0x10, 0x100, 0x1000, 0x10000, 0x100000, 
+        0x1000000 };
 
-    /* leave two bytes of space for the decimal point, and prefix */
-    n = num;
+    /* in this implementation we only use float */
+    float value = fs->length == LENGTH_LONG_DOUBLE ? *(long double *)ptr : 
+        *(double *)ptr;
+    
+    /* negate the sign if the number is negative. its much easier to deal with 
+     * posititive numbers and then prepend these with minus sign */
+    int minus = value < 0; value = fp_fabsf(value);
+    /* sign needs to be printed? */
+    int sign = (fs->flags & FLAGS_PLUS) || (fs->flags & FLAGS_SPACE) || minus;
+    /* use space instead of the plus sign? */
+    int sign_space = fs->flags & FLAGS_SPACE;
+
+    /* use the scientific format? */
+    int scientific = !!(fs->type_modifiers & TYPEMOD_EXP);
+    /* requested precision */
+    int precision = fs->precision == PRECISION_NONE ? 4 : fs->precision;
+    /* in which base are we about to print? */
+    int base = fs->type_modifiers & TYPEMOD_HEXFLOAT ? 16 : 10;
+
+    /* special numbers are: nan, inf */
+    int special = 0;
+
+    /* let's support the special numbers */
+    if (fp_isinf(value)) {
+        /* setup the number */
+        special = 1, *nptr++ = 'f', *nptr++= 'n', *nptr++ = 'i';
+        /* prefix print will handle the sign */
+        goto prefix;
     /* not a number */
-    if (isnan(val)) {
-        *n++ = 'n', *n++ = 'a', *n++ = 'n'; special_num = 1;goto print;
-    /* other cases */
-    } else {
-        /* convert to positive values */
-        if (val < 0)
-            negative = 1, val = -val;
-        /* start with prefix */
-        if (negative) {
-            *n++ = '-';
-        /* show the plus sign */
-        } else if (fs->flags & FLAGS_PLUS) {
-            *n++ = '+';
-        /* show a space */
-        } else if (fs->flags & FLAGS_SPACE) {
-            *n++ = ' ';
-        }
-        /* deal with infs */
-        if (isinf(val)) {
-            *n++ = 'i', *n++ = 'n', *n++ = 'f'; special_num = 1;
-        /* deal with hex prefix */
-        } else if (tm & TYPEMOD_HEXFLOAT){
-            *n++ = '0', *n++ = 'x';
-        }
-    }
-
-    /* special number */
-    if (special_num)
+    } else if (fp_isnan(value)) {
+        /* setup the representation */
+        special = 1, *nptr++ = 'n', *nptr++= 'a', *nptr++ = 'n';
+        /* no need to generate prefix for the nan */
         goto print;
-
-    /* make use of the given precision */
-    if (fs->precision != PRECISION_NONE)
-        precision = fs->precision;
-    /* crappy way of normalizing, but hey kinda works.. */
-    if (val != 0) {
-        while (val >= base) val /= base, e++;
-        while (val <     1) val *= base, e--;
     }
 
-    /* this is where the digits start (leave a byte for the decimal 
-     * point) */
-    n_num_start = ++n;
-    /* spit out all the digits required */
-    for (; precision >= 0; precision--, val *= base) {
-        /* compute the integer part of val * base */
-        digit = (val = modff(val, &val_int), (int)val_int);
-        /* store */
-        *n++ = digits[digit];
-    }
+    /* select appropriate constants for given base */
+    float lnb = base == 10 ? ln10 : ln16;
+    float lbb = base == 10 ? lb10 : lb16;
 
-    /* rounding time, check for the next digit whether it is larger 
-     * than 5. 'c' is for 'carry' here */
-    int c = (modff(val * base, &val_int), (int)val_int >= base / 2);
-    /* back-propagate the carry */
-    for (char *_n = n - 1; _n >= n_num_start && c; _n--)
-        *_n = *_n == digits[base - 1] ? (c = 1, '0') : 
-            (c = 0, digits[*_n + 1 - '0']);
-    /* still got the carry set after all this hassle? dump it in form of 
-     * a leading one */
-    if (c) 
-        *n_num_start = '1', e++;
-    /* we are now officially ready to put the decimal point! */
-    *(n_num_start - 1) = *n_num_start, *n_num_start-- = '.';
+    /* extract the exponent of 2 and the mantissa from the value that we are 
+     * about to print */
+    int exp2; float man = fp_frexpf(value, &exp2);
 
-    /* time to print the exponent */
-    *n++ = base == 10 ? 'e' : 'p';
-    *n++= e < 0 ? (e = -e, '-') : '+';
-    /* these will become useful when it will come to reversing the exponent 
-     * value print */
-    char *fe = n, *le = n;
-    /* print the exponent value (in reverse) */
-    for (unsigned int i = 0, _e = e; _e || i < 2; i++, n++)
-        *le++ = digits[_e % 10], _e /= 10;
-    /* and now reverse */
-    for (char t; --le > fe; )
-        t = *fe, *fe++ = *le, *le-- = t;
+    /* now let's convert the exponent of two to the exponent of base */
+    float expb = (float)exp2 / lbb;
+    /* now let's split the exponent of base to it's fractional and integer 
+     * parts: intereger part will tell us where the decimal point lies */
+    float _expb_i; float expb_f = fp_modff(expb, &_expb_i);
+    /* use the integer representation of the integer part of the exponent */
+    int expb_i = (expb_f >= 0 ? _expb_i : _expb_i);
 
-    /* start printing */
-    print:
-    /* finally we can compute the length of the number and prefix! */
-    n_len = n - n_num_start;
-    p_len = n_num_start - num;
-    /* width tells us the minimal print length */
-    if (fs->width != WIDTH_NONE) {
-        /* get the space left */
-        int space_left = max(fs->width - (n_len + p_len), 0);
-        /* ..and if zero flag is set then we prepend the numeric value with 
-         * zeros */
-        if ((fs->flags & FLAGS_ZERO) && !special_num) {
-            lz_len = space_left;
-        /* prepend with space */
+    /* and fractional part will be used to scale the mantissa. here we use the
+     * equation to raise the base to fractional pow: base^x = exp(x * ln(base)). 
+     * Since the mantissa is a number in range [0, 1) this multiplication shall 
+     * not produce result that is equal or greater to base */
+    float manb = man * fp_expf(expb_f * lnb);
+    /* convert to [1/base, 1) range */
+    if (manb >= 1.0f)
+        manb /= base, expb_i++;
+
+    /* select the base power table */
+    const float *pb = base == 10 ? p10 : p16;
+    /* derive the array length */
+    int pb_len = base == 10 ? elems(p10) : elems(p16);
+
+    /* limit the number starting position */
+    int shift = (scientific ? 1 : expb_i) + precision + 1;
+    /* limit the amount of shift */
+    shift = min(shift, pb_len - 1);
+    /* produce digits */
+    int manb_i = manb * pb[shift];
+    /* do the rounding if applicable */
+    if (shift > 0)
+        manb_i = (manb_i + base / 2) / base, shift--;
+
+    /* get the exponent range of the mantissa digits */
+    int man_spos = expb_i - shift;
+    /* get the exponent range for the whole number (with lead/trail zeros) */
+    int num_spos = scientific ? man_spos : -precision;
+    int num_epos = scientific ? expb_i : max(1, expb_i);
+    /* get the decimal point position */
+    int dec_pos = scientific ? num_epos - 1 : 0;
+
+    /* sanity check */
+    assert(num_epos - num_spos < sizeof(nbuf), "nbuf is too small", 0);
+
+    /* time to render the mantissa */
+    for (int pos = num_spos; pos < num_epos; pos++) {
+        /* decimal point */
+        if (pos == dec_pos && pos != num_spos) 
+            *nptr++ = '.';
+        /* meaningful digits */
+        if (pos >= man_spos && manb_i) {
+            *nptr++ = digits[manb_i % base], manb_i /= base;
+        /* leading and trailing zeros */
         } else {
-            ls_len = space_left;
+            *nptr++ = digits[0];
         }
     }
 
-    /* this is the complete print length */
-    size_t print_len = ls_len + p_len + lz_len + n_len;
-    /* limit the final size of the print */
-    if (print_len > size) {
-        /* ...so start discarding from the end */
-        n_len -= (print_len - size);
-        /* ...and back-propagate! */
-        if (n_len  < 0) lz_len += n_len, n_len = 0;
-        if (lz_len < 0) p_len += lz_len, lz_len = 0;
-        if (p_len < 0) ls_len += p_len, lz_len = 0;
+    /* scientific format ends up with the exponent value */
+    if (scientific) {
+        /* render the exponent */
+        for (int pos = 0, exp = abs(expb_i - 1) ; pos < 2 || exp; pos++)
+            *eptr++ = digits[exp % 10], exp /= 10;
+        /* append sign and proper exponent encoding character */
+        *eptr++ = expb_i < 1 ? '-': '+'; *eptr++ = base == 10 ? 'e' : 'p';
+    }
+
+    /* build up the prefix */
+    prefix:
+    /* print sign if requested */
+    if (sign)
+        *pptr++ = minus ? '-' : (sign_space ? ' ': '+');
+    /* print hex prefix if the number is in hex base and it's not nan nor inf */
+    if (base == 16 && !special)
+        *pptr++ = '0', *pptr++ = 'x';
+    
+
+    /* start printing to the destination bufer */
+    print: do {} while(0);
+    /* we are now ready to print the whole number into the destination buffer, 
+     * create some shorthands */
+    char *s, *d = dst, *dend = dst + size;
+    /* get the number of characters that constitute the number */
+    int number_len = (pptr - pbuf) + (eptr - ebuf) + (nptr - nbuf);
+    /* these shall hold the number of leading spaces and zeros if the width of 
+     * the print was specified */
+    int lspace_len = 0, tspace_len = 0, zeros_len = 0;
+    /* see if we have the width specified, if so we may need to add preceeding 
+     * space or leading zeros */
+    if (fs->width != WIDTH_NONE) {
+        /* get the number of bytes left */
+        int width_left = max(fs->width - number_len, 0);
+        /* limit the width */
+        dend = dst + fs->width;
+        /* left justification, done using spaces */
+        if (fs->flags & FLAGS_MINUS) {
+            tspace_len = width_left;
+        /* right justification done with leading zeros */
+        } else if ((fs->flags & FLAGS_ZERO) && !special) {
+            zeros_len = width_left;
+        /* default fallback: right justification done using leading spaces */
+        } else {
+            lspace_len = width_left;
+        }
     }
     
-    /* print everything */
-    for (int i = 0; i < ls_len; i++) *d++ = ' ';
-    for (int i = 0; i <  p_len; i++) *d++ = num[i];
-    for (int i = 0; i < lz_len; i++) *d++ = '0';
-    for (int i = 0; i <  n_len; i++) *d++ = num[i+p_len];
-    /* return the number of the printed chars */
+    /* print leading space, prefix and leading zeros */
+    for (        ; d != dend && lspace_len; *d++ = ' ', lspace_len--);
+    for (s = pbuf; d != dend && s != pptr ; *d++ = *s++);
+    for (        ; d != dend && zeros_len ; *d++ = '0', zeros_len--);
+    /* print number & exponent */
+    for (s = nptr; d != dend && s != nbuf ; *d++ = *--s);
+    for (s = eptr; d != dend && s != ebuf ; *d++ = *--s);
+    /* print trailing space */
+    for (        ; d != dend && tspace_len; *d++ = ' ', tspace_len--);
+
+    /* return the number of characters produced */
     return d - dst;
 }
 
