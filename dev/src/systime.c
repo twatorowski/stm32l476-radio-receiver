@@ -20,9 +20,19 @@ int SysTime_Init(void)
 	Critical_Enter();
 
 	/* enable tim2 clock */
-	RCC->APB1LENR |= RCC_APB1LENR_TIM2EN;
+	RCC->APB1LENR |= RCC_APB1LENR_TIM2EN | RCC_APB1LENR_TIM6EN;
     /* wait for the timer to be started */
-    while ((RCC->APB1LENR & RCC_APB1LENR_TIM2EN) == 0);
+    while ((RCC->APB1LENR & (RCC_APB1LENR_TIM2EN | RCC_APB1LENR_TIM6EN)) != 
+		(RCC_APB1LENR_TIM2EN | RCC_APB1LENR_TIM6EN));
+
+	    /* 1us per pulse */
+    TIM6->PSC = (1 * APB1CLOCK_HZ) / 1000000 - 1;
+    /* maximal automatic reload value */
+    TIM6->ARR = 0xffff;
+    /* reload prescaler */
+    TIM6->EGR = TIM_EGR_UG;
+    /* enable timer */
+    TIM6->CR1 = TIM_CR1_CEN;
 
 	/* set prescaler to obtain 100us pulse */
 	TIM2->PSC = ((APB1CLOCK_HZ) / 10000) - 1;
@@ -47,4 +57,10 @@ uint32_t SysTime_GetTime(void)
 {
     /* return the timer value in 100us ticks */
     return TIM2->CNT;
+}
+
+/* get current microsecond timer value */
+uint16_t SysTime_GetUs(void)
+{
+	return TIM6->CNT;
 }

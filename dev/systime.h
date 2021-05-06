@@ -26,4 +26,12 @@ int SysTime_Init(void);
  */
 uint32_t SysTime_GetTime(void);
 
+/**
+ * @brief returns current microsecond timer value. Useful for implementing 
+ * short delays
+ *
+ * @return uint16_t value of the timer
+ */
+uint16_t SysTime_GetUs(void);
+
 #endif /* DEV_SYSTIME_H */
