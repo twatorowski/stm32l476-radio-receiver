@@ -10,11 +10,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "assert.h"
 #include "err.h"
 #include "compiler.h"
 #include "config.h"
 
-/* allocated block of memory */
+/* descriptor for the allocated block of memory. must be a multiple of 
+ * 8 bytes long */
 typedef struct block {
     /* is the block used? */
     int used;
@@ -27,13 +29,16 @@ typedef struct block {
 } block_t;
 
 /* heap memory */
-static uint8_t ALIGNED(4) heap[SYS_HEAP_SIZE];
+static uint8_t ALIGNED(8) heap[SYS_HEAP_SIZE];
 
 /* initialize dynamic memory allocation */
 err_t Heap_Init(void)
 {
     /* initiate a single block within the heap space */
     block_t *b = (void *)heap;
+
+    /* sanity checks */
+    assert((sizeof(block_t) & 7) == 0, "block size not a multiple of 8", 0);
     
     /* setup block to */
     b->size = sizeof(heap);
@@ -51,8 +56,11 @@ void * Heap_Malloc(size_t size)
 {   
     /* pointers used during the search for the best fitting block */
     block_t *b, *best_fit = 0;
-    /* align to words, make room for descriptor */
-    size = ((size + 3) & ~0x3) + sizeof(block_t);
+
+    /* since this function is basically my implementation of malloc we shall 
+     * ensure the alignment of the returned memory pointer to 'any type' as 
+     * malloc does. */
+    size = ((size + 7) & ~0x7) + sizeof(block_t);
 
     /* go through linked list */
     for (b = (block_t *)heap; b; b = b->next) {
