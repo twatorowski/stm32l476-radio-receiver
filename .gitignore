@@ -45,5 +45,4 @@
 
 # other hidden stuff (except vscode config files)
 .*/
-!.vscode/
 
