@@ -10,6 +10,7 @@
 #include "compiler.h"
 #include "vectors.h"
 #include "dev/fpu.h"
+#include "dev/gpio.h"
 #include "dev/led.h"
 #include "dev/systime.h"
 #include "dev/usart3.h"
@@ -39,6 +40,8 @@ int Main(void)
     FPU_Init();
     /* initialize system timer */
     SysTime_Init();
+    /* initialize gpio driver */
+    GPIO_Init();
 
     /* initialize usart 3 */
     USART3_Init();

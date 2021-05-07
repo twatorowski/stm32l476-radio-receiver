@@ -12,12 +12,12 @@
 
 #include "config.h"
 #include "err.h"
+#include "dev/gpio.h"
 #include "dev/usart3.h"
 #include "stm32h743/dma.h"
 #include "stm32h743/dmamux.h"
 #include "stm32h743/nvic.h"
 #include "stm32h743/rcc.h"
-#include "stm32h743/gpio.h"
 #include "stm32h743/usart.h"
 #include "sys/critical.h"
 #include "sys/yield.h"
@@ -39,20 +39,14 @@ err_t USART3_Init(void)
 
     /* enable dma */
     RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
-    /* enable gpiod */
-    RCC->AHB4ENR |= RCC_AHB4ENR_GPIODEN;
     /* enable usart3 clock */
     RCC->APB1LENR |= RCC_APB1LENR_USART3EN;
 
-    /* pd8 - txd, pd9 - rxd */
-    GPIOD->MODER &= ~(GPIO_MODER_MODER8 | GPIO_MODER_MODER9);
-    /* set alternate function to usart */
-    GPIOD->AFRH |= GPIO_AF7_USART3 << LSB(GPIO_AFRH_AFSEL8) | 
-        GPIO_AF7_USART3 << LSB(GPIO_AFRH_AFSEL9);
-    /* enable pull up for rxd line */
-    GPIOD->PUPDR |= GPIO_PUPDR_PUPD9_0;
-    /* set both as alternate function */
-    GPIOD->MODER |= GPIO_MODER_MODER8_1 | GPIO_MODER_MODER9_1;
+    /* setup both in alternate functions configuration */
+    GPIO_CfgAlternatefunction(GPIOD, 8, GPIO_AF_SPI2_3_6_USART1_2_3_6_UART7_SDMMC1);
+    GPIO_CfgAlternatefunction(GPIOD, 9, GPIO_AF_SPI2_3_6_USART1_2_3_6_UART7_SDMMC1);
+    /* apply pull up to the rxd */
+    GPIO_CfgPull(GPIOD, 9, GPIO_PULL_UP);
 
     /* tx dma configuration */
     /* peripheral address */
