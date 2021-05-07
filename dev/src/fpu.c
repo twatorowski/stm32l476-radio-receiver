@@ -11,8 +11,6 @@
 #include "arch/arch.h"
 #include "stm32h743/scb.h"
 
-#include "util/fp.h"
-
 /* initialize fpu */
 err_t FPU_Init(void)
 {
