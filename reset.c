@@ -14,7 +14,7 @@
 void NORETURN Reset_ResetMCU(void)
 {
     /* perform the reset using the scb */
-    SCB->AIRCR = SCB_AIRCR_SYSRESETREQ | SCB_AIRCR_VECTKEYSTAT;
+    SCB->AIRCR = SCB_AIRCR_SYSRESETREQ | SCB_AIRCR_VECTKEY;
     /* this is so that the gcc does not complain */
     while (1);
 }

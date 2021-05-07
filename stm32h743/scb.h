@@ -97,7 +97,7 @@ typedef struct {
 #define SCB_VTOR_TBLOFF                                     (0x1FFFFFFUL << 7U)
 
 /****************** bit definitions for AIRCR register ******************/
-#define SCB_AIRCR_VECTKEY                                   (0xFFFFUL << 16U)
+#define SCB_AIRCR_VECTKEY                                   (0x05FAUL << 16U)
 #define SCB_AIRCR_VECTKEYSTAT                               (0xFFFFUL << 16U)
 #define SCB_AIRCR_ENDIANESS                                 (1UL << 15U)
 #define SCB_AIRCR_PRIGROUP                                  (7UL << 8U)
@@ -271,11 +271,11 @@ typedef struct {
 
 /* set exception priority */
 #define SCB_SETEXCPRI(e, p)                     \
-    (SCB->SHPR[(e) - 4] = (p))
+    (SCB->SHPR[(e) - 3] = (p))
 
 /* get exception priority */
 #define SCB_GETEXCPRI(e)                        \
-    (SCB->SHPR[(e) - 4])
+    (SCB->SHPR[(e) - 3])
 
 
 #endif /* _STM32H743_SCB2_H */
