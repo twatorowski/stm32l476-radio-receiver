@@ -41,7 +41,7 @@ typedef struct {
     reg32_t ADR;
     reg32_t MMFR[4];
     reg32_t ISAR[5];
-    reg32_t RESERVED0[6];
+    reg32_t RESERVED0[1];
     reg32_t CLIDR;                  
     reg32_t CTR;                    
     reg32_t CCSIDR;                 
