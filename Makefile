@@ -24,7 +24,7 @@ SRC += ./debug.c
 
 # device drivers
 SRC += ./dev/src/usart3.c ./dev/src/systime.c
-SRC += ./dev/src/led.c
+SRC += ./dev/src/led.c ./dev/src/fpu.c
 
 # operating system guts
 SRC += ./sys/src/critical.c ./sys/src/yield.c

@@ -9,6 +9,7 @@
 
 #include "compiler.h"
 #include "vectors.h"
+#include "dev/fpu.h"
 #include "dev/led.h"
 #include "dev/systime.h"
 #include "dev/usart3.h"
@@ -19,9 +20,6 @@
 #include "debug.h"
 
 /* tests */
-#include "test/yield_task_usart3.h"
-#include "test/heap.h"
-#include "test/lock.h"
 #include "test/led_blink.h"
 
 /* program init function, called before main with interrupts disabled */
@@ -37,10 +35,14 @@ void Init(void)
  * pedantic mode (-Wmain) */
 int Main(void)
 {
-    /* initialize usart 3 */
-    USART3_Init();
+    /* enable the floating point unit */
+    FPU_Init();
     /* initialize system timer */
     SysTime_Init();
+
+    /* initialize usart 3 */
+    USART3_Init();
+
     /* initialize led driver */
     Led_Init();
     /* set led state */
@@ -50,10 +52,7 @@ int Main(void)
     dprintf("Welcome!\n", 0);
 
     /* tests */
-    /* test usart 3 communication */
-    // TestYieldTaskUSART3_Init();
-    // TestHeap_Init();
-    // TestLock_Init();
+    /* led blinks */
     TestLEDBlink_Init();
 
     /* execution loop */
