@@ -13,6 +13,8 @@
 #include "dev/extimux.h"
 #include "dev/fpu.h"
 #include "dev/gpio.h"
+#include "dev/keypad.h"
+#include "dev/lcd.h"
 #include "dev/led.h"
 #include "dev/systime.h"
 #include "dev/usart3.h"
@@ -65,6 +67,11 @@ void Main(void *arg)
     Led_Init();
     /* set led state */
     Led_SetState(1, LED_GRN | LED_RED | LED_YEL);
+
+    /* initialize keypad driver */
+    Keypad_Init();
+    /* initialize lcd driver */
+    LCD_Init();
 
     /* show some debug activity */
     dprintf("Welcome!\n", 0);
