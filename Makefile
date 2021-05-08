@@ -25,7 +25,7 @@ SRC += ./debug.c
 # device drivers
 SRC += ./dev/src/usart3.c ./dev/src/systime.c
 SRC += ./dev/src/led.c ./dev/src/fpu.c
-SRC += ./dev/src/gpio.c
+SRC += ./dev/src/gpio.c ./dev/src/extimux.c
 
 # operating system guts
 SRC += ./sys/src/critical.c ./sys/src/yield.c
@@ -35,7 +35,7 @@ SRC += ./sys/src/sem.c
 # tests
 SRC += ./test/src/yield_task_usart3.c
 SRC += ./test/src/heap.c ./test/src/lock.c
-SRC += ./test/src/led_blink.c
+SRC += ./test/src/led_blink.c ./test/src/button.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c

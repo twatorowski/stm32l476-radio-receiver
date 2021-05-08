@@ -19,6 +19,7 @@
 
 /* includes with interrupt/exceptions handlers */
 #include "sys/yield.h"
+#include "dev/extimux.h"
 
 /* shorthands so that the vector table looks neat! */
 #define SET_SP(sp)                  [STM32_VECTOR_STACK_PTR_BASE].v = sp
@@ -41,4 +42,12 @@ SECTION(".flash_vectors") vector_entry_t flash_vectors[] = {
 
 
     /* interrupts */
+    /* exti interrupt handlers */
+    SET_INT_VEC(STM32_INT_EXTI0, ExtiMux_Exti0Isr),
+    SET_INT_VEC(STM32_INT_EXTI1, ExtiMux_Exti1Isr),
+    SET_INT_VEC(STM32_INT_EXTI2, ExtiMux_Exti2Isr),
+    SET_INT_VEC(STM32_INT_EXTI3, ExtiMux_Exti3Isr),
+    SET_INT_VEC(STM32_INT_EXTI4, ExtiMux_Exti4Isr),
+    SET_INT_VEC(STM32_INT_EXTI9_5, ExtiMux_Exti9_5Isr),
+    SET_INT_VEC(STM32_INT_EXTI15_10, ExtiMux_Exti15_10Isr),
 };
