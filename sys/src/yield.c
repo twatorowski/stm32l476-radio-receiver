@@ -84,10 +84,7 @@ typedef struct task {
 } task_t;
 
 /* list of tasks in the system */
-static task_t tasks[OS_MAX_TASKS] = {
-    /* 0th task is the system task */
-    [0] = { .state = TASK_ACTIVE, .stack = 0 },
-};
+task_t tasks[OS_MAX_TASKS];
 /* current task pointer */
 static task_t *task = tasks;
 /* context switch counter */
@@ -97,8 +94,8 @@ static volatile uint32_t switch_cnt;
 static void Yield_CallScheduler(void)
 {
     /* set pend sv, ensure that we've reached the switcher routine */
-    for (uint32_t cnt = switch_cnt; cnt == switch_cnt; )
-        SCB->ICSR |= SCB_ICSR_PENDSVSET;
+    // for (uint32_t cnt = switch_cnt; cnt == switch_cnt; )
+    SCB->ICSR |= SCB_ICSR_PENDSVSET;
 }
 
 /* task executor wrapper */
@@ -147,7 +144,7 @@ static void Yield_Schedule(void)
 }
 
 /* context switch interrupt */
-void NAKED OPTIMIZE ("Os") Yield_PendSVHandler(void)
+void NAKED OPTIMIZE ("O0") Yield_PendSVHandler(void)
 {
     /* stack pointer holding register */
     register task_frame_t *sp;
@@ -155,17 +152,10 @@ void NAKED OPTIMIZE ("Os") Yield_PendSVHandler(void)
     /* we are in the naked function, and as such the mcu has already built the 
      * stack frame that consists of xpsr, pc, lr, r12, r3, r2, r1, r0 */
     ASM volatile (
-        /* make sure that no interrupt occurs from this point on */
-        "cpsid i                        \n"
 
-        /* lr containts so called EXC RETURN value. 2nd bit contains the 
-         * information about whether the place that we came from used the 
-         * msp or psp */
-        "tst lr, #0x00000004            \n"
-        /* if 2nd bit is zero then load the msp value into r0, else load psp */
-        "ite eq                         \n"
-        "mrseq r0, msp                  \n"
-        "mrsne r0, psp                  \n"
+        /* load the stack pointer */
+        "mrs r0, psp                    \n"
+        "isb                            \n"
 
         /* store all other registers */
         "stmdb r0!, {r4-r11}            \n"
@@ -183,8 +173,6 @@ void NAKED OPTIMIZE ("Os") Yield_PendSVHandler(void)
 
         /* copy the stack pointer value */
         "mov %[sp], r0                  \n"
-        /* restore the interrupts */
-        "cpsie i                        \n"
         /* write operands */
         : [sp] "=r" (sp)
     );
@@ -200,29 +188,23 @@ void NAKED OPTIMIZE ("Os") Yield_PendSVHandler(void)
     
     /* load registers r4-r11 from next task frame */
     ASM volatile (
-        /* make sure that no interrupt occurs from this point on */
-        "cpsid i                        \n"
 
         /* read the EXC_RETURN code for the next task */
-        "ldmia %[sp]!, {lr}             \n"
+        "ldmia %[sp]!, {r0}             \n"
+
         /* test for the floating point context */
-        "tst lr, #0x00000010            \n"
+        "tst r0, #0x00000010            \n"
         "it eq                          \n"
         "vldmiaeq %[sp]!, {s16-s31}	    \n"
+
         /* read all the registers that we need to read manually */
         "ldmia %[sp]!, {r4-r11}         \n"
         
-        /* are we returning to task0 that uses msp? */
-        "tst lr, #0x00000004            \n"
-        /* if so then prepare the execution from msp stack pointer, else use
-         * psp */
-        "ite eq                         \n"
-        "msreq msp, %[sp]               \n"
-        "msrne psp, %[sp]               \n"
-        /* restore the interrupts */
-        "cpsie i                        \n"
+        /* restore the stack pointer */
+        "msr psp, %[sp]                 \n"
+        "isb                            \n"
         /* continue with next task by returning appropriate EXC_RETURN code */
-        "bx lr                          \n"
+        "bx r0                          \n"
         /* write operands */
         : [sp] "+r" (sp)
     );
@@ -232,10 +214,31 @@ void NAKED OPTIMIZE ("Os") Yield_PendSVHandler(void)
 err_t Yield_Init(void)
 {
     /* set the context switcher priority to the lowest possible level */
-    SCB_SETEXCPRI(STM32_EXC_PENDSV, 0xff);
+    SCB_SETEXCPRI(STM32_EXC_PENDSV, INT_PRI_YIELD);
 
     /* return status */
     return EOK;
+}
+
+/* start the context switcher */
+void Yield_Start(void)
+{
+    /* setup initial stack value. since we are making a normal call to handler 
+     * we do not need to create stack frame */
+    task->sp = (task_frame_t *)((uintptr_t)task->stack + task->stack_size);
+    task->sp = (task_frame_t *)((uintptr_t)task->sp & ~0x7);
+    task->state = TASK_ACTIVE;
+
+    /* setup stack pointer */
+    Arch_WritePSP(task->sp);
+    Arch_ISB();
+    /* start using the program stack pointer */
+    Arch_WriteCONTROL(0x02);
+    /* call the handler */
+    tasks->handler(tasks->handler_arg);
+
+    /* shall never be reached */
+    while (1);
 }
 
 /* prepare task for the execution */

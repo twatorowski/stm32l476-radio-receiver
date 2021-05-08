@@ -21,7 +21,6 @@ typedef void (* yield_hndl_t)(void *);
 /** @brief Context switch service routine */
 void Yield_PendSVHandler(void);
 
-
 /**
  * @brief Starts the context switcher. Needs to be called before any context 
  * switch takes place
@@ -30,6 +29,10 @@ void Yield_PendSVHandler(void);
  */
 err_t Yield_Init(void);
 
+/**
+ * @brief start the context switcher. Never returns
+ */
+void Yield_Start(void);
 
 /**
  * @brief Create a task, but do not start it right away - it will be started 

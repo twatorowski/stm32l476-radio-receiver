@@ -9,6 +9,7 @@
 
 #include "compiler.h"
 #include "vectors.h"
+#include "dev/extimux.h"
 #include "dev/fpu.h"
 #include "dev/gpio.h"
 #include "dev/led.h"
@@ -23,6 +24,10 @@
 /* tests */
 #include "test/led_blink.h"
 
+/* program main function, must return int so that gcc does not complain in 
+ * pedantic mode (-Wmain) */
+void Main(void *arg);
+
 /* program init function, called before main with interrupts disabled */
 void Init(void)
 {
@@ -30,11 +35,16 @@ void Init(void)
     Heap_Init();
     /* start the context switcher */
     Yield_Init();
+
+    /* create the entry task */
+    Yield_CreateTask(Main, 0, 2048);
+    /* this shall initialize the scheduler */
+    Yield_Start();
 }
 
 /* program main function, must return int so that gcc does not complain in 
  * pedantic mode (-Wmain) */
-int Main(void)
+void Main(void *arg)
 {
     /* enable the floating point unit */
     FPU_Init();
@@ -42,6 +52,8 @@ int Main(void)
     SysTime_Init();
     /* initialize gpio driver */
     GPIO_Init();
+    /* initialize exti driver */
+    ExtiMux_Init();
 
     /* initialize usart 3 */
     USART3_Init();
@@ -55,14 +67,10 @@ int Main(void)
     dprintf("Welcome!\n", 0);
 
     /* tests */
-    /* led blinks */
     TestLEDBlink_Init();
 
     /* execution loop */
     while (1) {
         Yield();
     }
-
-    /* never reached */
-    return 0;
 }

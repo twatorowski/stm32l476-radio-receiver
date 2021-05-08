@@ -98,7 +98,7 @@ static inline ALWAYS_INLINE void Arch_ISB(void)
  *
  * @param x value to be written
  */
-static inline ALWAYS_INLINE void Arch_WriteBasepri(int x)
+static inline ALWAYS_INLINE void Arch_WriteBASEPRI(int x)
 {
     /* assembly code */
     ASM volatile (
@@ -149,7 +149,7 @@ static inline ALWAYS_INLINE uint32_t Arch_ReadPRIMASK(void)
 }
 
 /**
- * @brief Returns the value of the stack pointer
+ * @brief Returns the value of the main stack pointer
  *
  * @return stack pointer value
  */
@@ -166,6 +166,70 @@ static inline ALWAYS_INLINE void * Arch_ReadMSP(void)
 
     /* report result */
     return result;
+}
+
+/**
+ * @brief Writes the main stack pointer value
+ * 
+ * @param msp stack pointer value 
+ */
+static inline ALWAYS_INLINE void Arch_WriteMSP(void *msp)
+{
+    /* some assembly magic */
+    ASM volatile (
+        "msr    msp, %[msp] \n"
+        : 
+        : [msp] "r" (msp)
+    );
+}
+
+/**
+ * @brief Returns the value of the program stack pointer
+ *
+ * @return stack pointer value
+ */
+static inline ALWAYS_INLINE void * Arch_ReadPSP(void)
+{
+    /* result */
+    void * result;
+    /* some assembly magic */
+    ASM volatile (
+        "mrs    %[result], psp \n"
+        : [result] "=r" (result)
+    );
+
+    /* report result */
+    return result;
+}
+
+/**
+ * @brief Writes the program stack pointer value
+ * 
+ * @param msp stack pointer value 
+ */
+static inline ALWAYS_INLINE void Arch_WritePSP(void *psp)
+{
+    /* some assembly magic */
+    ASM volatile (
+        "msr    psp, %[psp] \n"
+        : 
+        : [psp] "r" (psp)
+    );
+}
+
+/**
+ * @brief Writes the CONTROL register value
+ * 
+ * @param value value to be written
+ */
+static inline ALWAYS_INLINE void Arch_WriteCONTROL(uint32_t value)
+{
+    /* some assembly magic */
+    ASM volatile (
+        "msr    control, %[value]\n"
+        : 
+        : [value] "r" (value)
+    );
 }
 
 /**

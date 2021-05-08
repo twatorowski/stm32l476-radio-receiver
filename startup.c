@@ -70,5 +70,5 @@ void SECTION(".flash_code") Startup_ResetHandler(void)
     /* do the initialization */
     Init();
     /* jump to main program routine */
-    Main();
+    // Main();
 }

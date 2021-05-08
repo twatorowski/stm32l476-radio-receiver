@@ -45,6 +45,27 @@
 /** @} */
 
 
+/** @name Interrupt priorities */
+/** @{ */
+/** @brief context switcher */
+#define INT_PRI_YIELD                               0xf0
+/** @brief external interrupt line 0 */
+#define INT_PRI_EXTIMUX_0                           0xe0
+/** @brief external interrupt line 1 */
+#define INT_PRI_EXTIMUX_1                           0xe0
+/** @brief external interrupt line 2 */
+#define INT_PRI_EXTIMUX_2                           0xe0
+/** @brief external interrupt line 3 */
+#define INT_PRI_EXTIMUX_3                           0xe0
+/** @brief external interrupt line 4 */
+#define INT_PRI_EXTIMUX_4                           0xe0
+/** @brief external interrupt lines 9 - 5 */
+#define INT_PRI_EXTIMUX_9_5                         0xe0
+/** @brief external interrupt lines 15 - 10 */
+#define INT_PRI_EXTIMUX_15_10                       0xe0
+/** @} */
+
+
 
 /** @name Yield configuration */
 /** @{ */

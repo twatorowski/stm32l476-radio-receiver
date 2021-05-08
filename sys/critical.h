@@ -23,7 +23,7 @@ extern int critical_nesting_cnt;
 static inline ALWAYS_INLINE void Critical_Enter(void)
 {
     /* set interrupt base priority register */
-    Arch_WriteBasepri(0x10);
+    Arch_WriteBASEPRI(0x10);
     /* increment counter */
     critical_nesting_cnt++;
 }
@@ -35,7 +35,7 @@ static inline ALWAYS_INLINE void Critical_Exit(void)
 {
     /* decrement counter, re-enable interrupts if needed */
     if (--critical_nesting_cnt == 0)
-        Arch_WriteBasepri(0x00);
+        Arch_WriteBASEPRI(0x00);
 }
 
 #endif /* SYS_CRITICAL_H */
