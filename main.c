@@ -9,6 +9,7 @@
 
 #include "compiler.h"
 #include "vectors.h"
+#include "dev/analog.h"
 #include "dev/extimux.h"
 #include "dev/fpu.h"
 #include "dev/gpio.h"
@@ -52,6 +53,8 @@ void Main(void *arg)
     SysTime_Init();
     /* initialize gpio driver */
     GPIO_Init();
+    /* adc driver */
+    Analog_Init();
     /* initialize exti driver */
     ExtiMux_Init();
 

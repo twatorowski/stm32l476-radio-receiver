@@ -26,11 +26,12 @@ SRC += ./debug.c
 SRC += ./dev/src/usart3.c ./dev/src/systime.c
 SRC += ./dev/src/led.c ./dev/src/fpu.c
 SRC += ./dev/src/gpio.c ./dev/src/extimux.c
+SRC += ./dev/src/analog.c 
 
 # operating system guts
 SRC += ./sys/src/critical.c ./sys/src/yield.c
 SRC += ./sys/src/sleep.c ./sys/src/heap.c
-SRC += ./sys/src/sem.c
+SRC += ./sys/src/sem.c ./sys/src/delay.c
 
 # tests
 SRC += ./test/src/yield_task_usart3.c
