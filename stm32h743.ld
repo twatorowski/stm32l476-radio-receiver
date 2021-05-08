@@ -135,7 +135,7 @@ SECTIONS
     __bss_size = SIZEOF(.bss);
 
     /* stack pointer */
-    __stack = ORIGIN(DTCM) + LENGTH(DTCM);
+    __stack = ORIGIN(SRAM) + LENGTH(SRAM);
 	
     /* complete flash image size */
     __flash_image_size = __flash_code_size + __ram_code_size + __data_size;
