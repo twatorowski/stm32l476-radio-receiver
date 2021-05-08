@@ -16,12 +16,12 @@
 
 /** channels that are present on board */
 typedef enum analog_channel {
-    ANALOG_A0 = 16,
-    ANALOG_A1 = 17,
-    ANALOG_A2 = 18,
+    ANALOG_A0 = 15,
+    ANALOG_A1 = 10,
+    ANALOG_A2 = 13,
     ANALOG_A3 = 5,
-    ANALOG_A4 = 10,
-    ANALOG_A5 = 11,
+    ANALOG_A4 = 12,
+    ANALOG_A5 = 6,
 } analog_channel_t;
 
 /**
