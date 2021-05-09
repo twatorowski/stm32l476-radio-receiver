@@ -37,6 +37,7 @@ SRC += ./sys/src/sem.c ./sys/src/delay.c
 SRC += ./test/src/yield_task_usart3.c
 SRC += ./test/src/heap.c ./test/src/lock.c
 SRC += ./test/src/led_blink.c ./test/src/button.c
+SRC += ./test/src/delay.c
 
 # utilities
 SRC += ./util/src/string.c ./util/src/stdio.c
